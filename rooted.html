@@ -8,18 +8,22 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg-primary:   #ffffff;
-      --bg-secondary: #f1f3f5;
-      --bg-card:      #f7f8fa;
-      --bg-hover:     #edf0f3;
-      --accent-blue:  #1d3461;
-      --accent-green: #1a5c38;
-      --accent-amber: #7a5c00;
-      --text-primary: #0c1825;
-      --text-dim:     #5c6b7a;
-      --text-mid:     #2d3f50;
-      --border:       rgba(12,24,37,0.12);
-      --border-soft:  rgba(12,24,37,0.07);
+      --bg-primary:    #0a0a0a;
+      --bg-secondary:  #0f0f0f;
+      --bg-card:       #111111;
+      --bg-card-hover: #181818;
+      --accent-blue:   #4090e0;
+      --accent-green:  #52aeff;
+      --accent-red:    #ff6b6b;
+      --accent-purple: #c084fc;
+      --accent-amber:  #fbbf24;
+      --text-primary:  #e8e8e8;
+      --text-dim:      #888888;
+      --text-mid:      #c8c8c8;
+      --border:        rgba(255,255,255,0.07);
+      --border-soft:   rgba(255,255,255,0.035);
+      --placeholder:   #666666;
+      --accent-cyan:   #52aeff;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +39,7 @@
     /* NAV */
     nav {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(255,255,255,0.96);
+      background: rgba(10,10,10,0.96);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       padding: 0 clamp(1.5rem, 6vw, 5rem);

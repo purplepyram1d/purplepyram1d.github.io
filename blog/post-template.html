@@ -18,17 +18,22 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg-primary:   #ffffff;
-      --bg-secondary: #f1f3f5;
-      --bg-card:      #f7f8fa;
-      --accent-blue:  #1d3461;
-      --accent-green: #1a5c38;
-      --accent-red:   #9e1a1a;
-      --text-primary: #0c1825;
-      --text-dim:     #5c6b7a;
-      --text-mid:     #2d3f50;
-      --border:       rgba(12,24,37,0.12);
-      --border-soft:  rgba(12,24,37,0.07);
+      --bg-primary:    #0a0a0a;
+      --bg-secondary:  #0f0f0f;
+      --bg-card:       #111111;
+      --bg-card-hover: #181818;
+      --accent-blue:   #4090e0;
+      --accent-green:  #52aeff;
+      --accent-red:    #ff6b6b;
+      --accent-purple: #c084fc;
+      --accent-amber:  #fbbf24;
+      --text-primary:  #e8e8e8;
+      --text-dim:      #888888;
+      --text-mid:      #c8c8c8;
+      --border:        rgba(255,255,255,0.07);
+      --border-soft:   rgba(255,255,255,0.035);
+      --placeholder:   #666666;
+      --accent-cyan:   #52aeff;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,7 +50,7 @@
     nav {
       position: fixed; top: 0; left: 0; right: 0;
       z-index: 100;
-      background: rgba(255,255,255,0.96);
+      background: rgba(10,10,10,0.96);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       padding: 0 clamp(1.5rem, 6vw, 5rem);
@@ -336,15 +341,15 @@
 <nav>
   <a href="../../index.html" class="nav-name">
     <svg viewBox="0 0 44 28" width="44" height="28" aria-hidden="true" style="display:block;flex-shrink:0">
-      <rect x="0.75" y="0.75" width="42.5" height="26.5" fill="none" stroke="#1d3461" stroke-width="1.5"/>
-      <rect x="0.75" y="22.25" width="13" height="4.5" fill="#1d3461"/>
-      <text x="22" y="14" font-family="IBM Plex Mono,Courier New,monospace" font-size="12" font-weight="700" fill="#1d3461" text-anchor="middle" dominant-baseline="middle">JM</text>
+      <rect x="0.75" y="0.75" width="42.5" height="26.5" fill="none" stroke="#52aeff" stroke-width="1.5"/>
+      <rect x="0.75" y="22.25" width="13" height="4.5" fill="#52aeff"/>
+      <text x="22" y="14" font-family="IBM Plex Mono,Courier New,monospace" font-size="12" font-weight="700" fill="#52aeff" text-anchor="middle" dominant-baseline="middle">JM</text>
     </svg>
     Johnny Meintel
   </a>
   <ul class="nav-links">
     <li><a href="../../index.html#about">About</a></li>
-    <li><a href="../../index.html#skills">Skills</a></li>
+    <li><a href="../../index.html#skills">Tools</a></li>
     <li><a href="../../index.html#labs">Research</a></li>
     <li><a href="../../index.html#bounty">Bounty</a></li>
     <li><a href="../index.html" class="active">Writing</a></li>
