@@ -1012,6 +1012,21 @@
       </div>
     </div>
 
+    <!-- DNS attack + detection -->
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">dns-attack-detection</span>
+        <a href="https://github.com/purplepyram1d/dns-attack-detection" target="_blank" class="tool-link">GitHub →</a>
+      </div>
+      <p class="tool-desc">Wazuh detection for DNS zone transfer, dynamic-update spoofing, and WPAD abuse. Covers unauthenticated AXFR, rogue record injection, and credential capture over SMB and a weaponized WPAD proxy, plus the Global Query Block List default most write-ups on this attack chain skip entirely. Companion to a full attack-to-detection write-up.</p>
+      <div class="tool-tags">
+        <span class="tool-tag">Wazuh</span>
+        <span class="tool-tag">DNS</span>
+        <span class="tool-tag">Active Directory</span>
+        <span class="tool-tag">T1584.002</span>
+      </div>
+    </div>
+
     <!-- Homelab repos -->
     <div class="tool-card">
       <div class="tool-header">
@@ -1116,14 +1131,14 @@
     </div>
     <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:4px; padding:1.6rem; border-left:2px solid var(--accent-blue);">
       <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:0.7rem; flex-wrap:wrap;">
-        <span style="font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--text-dim);">2026-06-28</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--text-dim);">2026-07-26</span>
         <span style="font-family:'IBM Plex Mono',monospace; font-size:0.6rem; padding:2px 7px; border-radius:2px; background:var(--bg-secondary); color:var(--text-dim); border:1px solid var(--border-soft);">detection-engineering</span>
-        <span style="font-family:'IBM Plex Mono',monospace; font-size:0.6rem; padding:2px 7px; border-radius:2px; background:var(--bg-secondary); color:var(--text-dim); border:1px solid var(--border-soft);">RMM abuse</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:0.6rem; padding:2px 7px; border-radius:2px; background:var(--bg-secondary); color:var(--text-dim); border:1px solid var(--border-soft);">DNS</span>
       </div>
-      <a href="https://medium.com/@johnnymeintel/one-rmm-is-it-two-is-an-incident-1-2-2411904f6ff0" target="_blank" style="font-size:1.05rem; font-weight:600; color:var(--text-primary); text-decoration:none; display:block; margin-bottom:0.6rem; line-height:1.3; transition:color 0.15s;" onmouseover="this.style.color='var(--accent-blue)'" onmouseout="this.style.color='var(--text-primary)'">One RMM Is IT. Two Is An Incident. (Part 1)</a>
-      <p style="font-size:0.87rem; color:var(--text-dim); line-height:1.7; max-width:620px; margin-bottom:1rem;">Detecting daisy-chained remote access tools with Sysmon and Wazuh. Part 1 builds the rename-proof telemetry and identification; Part 2 adds the multiplicity and causal detection in the SIEM.</p>
+      <a href="https://medium.com/@johnnymeintel/i-broke-dns-exploited-it-then-fixed-it-heres-how-c612346fcc3b" target="_blank" style="font-size:1.05rem; font-weight:600; color:var(--text-primary); text-decoration:none; display:block; margin-bottom:0.6rem; line-height:1.3; transition:color 0.15s;" onmouseover="this.style.color='var(--accent-blue)'" onmouseout="this.style.color='var(--text-primary)'">I Broke DNS, Exploited It, Then Fixed It (Here's How)</a>
+      <p style="font-size:0.87rem; color:var(--text-dim); line-height:1.7; max-width:620px; margin-bottom:1rem;">Unauthenticated zone transfer, DNS dynamic-update spoofing, and WPAD credential capture against a domain controller, then the Wazuh detection and hardening that shuts it all back down.</p>
       <div style="display:flex; align-items:center; gap:1.5rem;">
-        <a href="https://medium.com/@johnnymeintel/one-rmm-is-it-two-is-an-incident-1-2-2411904f6ff0" target="_blank" style="font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--accent-blue); text-decoration:none;">Read on Medium →</a>
+        <a href="https://medium.com/@johnnymeintel/i-broke-dns-exploited-it-then-fixed-it-heres-how-c612346fcc3b" target="_blank" style="font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--accent-blue); text-decoration:none;">Read on Medium →</a>
         <a href="blog/index.html" style="font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-dim); text-decoration:none; transition:color 0.15s;" onmouseover="this.style.color='var(--accent-blue)'" onmouseout="this.style.color='var(--text-dim)'">All posts →</a>
       </div>
     </div>
@@ -1138,6 +1153,14 @@
         </tr>
       </thead>
       <tbody>
+        <tr>
+          <td>2026-07-26</td>
+          <td>Homelab</td>
+          <td>DC01 - DNS Attack &amp; Detection</td>
+          <td>T1584.002 · detection engineering</td>
+          <td>Unauthenticated zone transfer, dynamic-update record spoofing, and WPAD credential capture via Responder, then Wazuh rules on the DNS Audit log and a hardening pass that shuts each attack back down</td>
+          <td><a href="https://medium.com/@johnnymeintel/i-broke-dns-exploited-it-then-fixed-it-heres-how-c612346fcc3b" target="_blank">Read →</a></td>
+        </tr>
         <tr>
           <td>2026-06-28</td>
           <td>Homelab</td>
