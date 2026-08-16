@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Installing My Own Email Server Using hMailServer to Practice Phishing and Email Security &mdash; purplepyram1d</title>
-<meta name="description" content="Fig 1. johnnymeintel.com The next component of my homelab setup is installing the email server on my domain controller â€” DC01 . I just finished creating the fake company database a">
+<title>Installing My Own Email Server Using hMailServer &mdash; purplepyram1d</title>
+<meta name="description" content="The next component of my homelab setup is installing the email server on my domain controller — DC01. I just finished creating the fake company database and employee login por">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="../../assets/images/logo-pyramid.png">
 <link rel="stylesheet" href="../../assets/css/site.css">
 
-<link rel="canonical" href="https://johnnymeintel.com/blog/posts/installing-my-own-email-server-hmailserver.html">
+<link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/installing-my-own-email-server-hmailserver.html">
 
-<meta property="og:title" content="Installing My Own Email Server Using hMailServer to Practice Phishing and Email Security">
-<meta property="og:description" content="Fig 1. johnnymeintel.com The next component of my homelab setup is installing the email server on my domain controller â€” DC01 . I just finished creating the fake company database a">
+<meta property="og:title" content="Installing My Own Email Server Using hMailServer">
+<meta property="og:description" content="The next component of my homelab setup is installing the email server on my domain controller — DC01. I just finished creating the fake company database and employee login por">
 <meta property="og:type" content="article">
 </head>
 <body>
@@ -44,20 +44,16 @@
     </div>
 
     <article>
-      <h1>Installing My Own Email Server Using hMailServer to Practice Phishing and Email Security</h1>
+      <h1>Installing My Own Email Server Using hMailServer</h1>
       <div class="art-meta">Johnny Meintel &middot; 2025-12-25</div>
 
-<figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/01.png" alt="johnnymeintel.com">
-        <figcaption><span class="lab">Fig 1.</span> johnnymeintel.com</figcaption>
-      </figure>
-      <p>The next component of my <strong>homelab setup</strong> is installing the email server on my domain controllerâ€Šâ€”â€Š<strong>DC01</strong>. I just <strong>finished creating</strong> the fake company database and employee loginÂ portal.</p>      <h2><span class="n">1</span>Initial Setup</h2>
+<p>The next component of my <strong>homelab setup</strong> is installing the email server on my domain controller — <strong>DC01</strong>. I just <strong>finished creating</strong> the fake company database and employee login portal.</p>      <h2><span class="n">1</span>Initial Setup</h2>
       <ul><li>Download <a href="https://www.hmailserver.com/download"><strong>hMailServer</strong></a></li><li>Login as Administrator</li></ul>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/02.png" alt="First login to hMailServer onÂ DC01.">
-        <figcaption><span class="lab">Fig 2.</span> First login to hMailServer onÂ DC01.</figcaption>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/01.png" alt="First login to hMailServer on DC01.">
+        <figcaption><span class="lab">Fig 1.</span> First login to hMailServer on DC01.</figcaption>
       </figure>
-      <p><strong>Add DNSÂ Records</strong></p>
-      <p>No one wants to be <em>username@192.168.1.1</em>â€Šâ€”â€ŠI will need to create DNS records to resolve the IP address to the local hostname of cjcs.local.</p><pre># Add MX record for mail.cjcs.local
+      <p><strong>Add DNS Records</strong></p>
+      <p>No one wants to be <em>username@192.168.1.1</em> — I will need to create DNS records to resolve the IP address to the local hostname of cjcs.local.</p><pre># Add MX record for mail.cjcs.local
 Add-DnsServerResourceRecordMX -Name "@" -ZoneName "cjcs.local" `
     -MailExchange "mail.cjcs.local" -Preference 10
 
@@ -67,45 +63,45 @@ Add-DnsServerResourceRecordA -Name "mail" -ZoneName "cjcs.local" `
 
 # Verify
 nslookup mail.cjcs.local</pre>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/03.png" alt="DNS records created onÂ DC01.">
-        <figcaption><span class="lab">Fig 3.</span> DNS records created onÂ DC01.</figcaption>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/02.png" alt="DNS records created on DC01.">
+        <figcaption><span class="lab">Fig 2.</span> DNS records created on DC01.</figcaption>
       </figure>
-      <p>DC01 knows it has a mail server, letâ€™s check onÂ MGR1:</p>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/04.png" alt="MGR1 can see the correct port is open and can resolve the DNSÂ record.">
-        <figcaption><span class="lab">Fig 4.</span> MGR1 can see the correct port is open and can resolve the DNSÂ record.</figcaption>
+      <p>DC01 knows it has a mail server, let’s check on MGR1:</p>      <figure>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/03.png" alt="MGR1 can see the correct port is open and can resolve the DNS record.">
+        <figcaption><span class="lab">Fig 3.</span> MGR1 can see the correct port is open and can resolve the DNS record.</figcaption>
       </figure>
       <p><strong>Create The Accounts In hMailServer</strong></p>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/05.png" alt="Accounts created in hMailServer Admin onÂ DC01.">
-        <figcaption><span class="lab">Fig 5.</span> Accounts created in hMailServer Admin onÂ DC01.</figcaption>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/04.png" alt="Accounts created in hMailServer Admin on DC01.">
+        <figcaption><span class="lab">Fig 4.</span> Accounts created in hMailServer Admin on DC01.</figcaption>
       </figure>
-      <ul><li><strong>admin@cjcs.local</strong>â€Šâ€”â€ŠServer privileges</li><li><strong>marcus.chen@cjcs.local</strong>â€Šâ€”â€ŠUser privileges</li><li><strong>support@cjcs.local</strong>â€Šâ€”â€ŠDomain privileges</li></ul>
-      <p>I doubt I will delve too deeply into hMailServer administration, but I wanted to create account with varying privileges in case in came in handy down theÂ line.</p>      <h2><span class="n">2</span>Logging In For the FirstÂ Time</h2>
-      <ul><li>Download <a href="https://www.thunderbird.net/"><strong>Mozilla Thunderbird</strong></a></li><li><em>Use the following settings:</em></li><li><strong>Incoming</strong>: IMAP (portÂ 143)</li><li><strong>Server</strong>: mail.cjcs.local</li><li><strong>Security</strong>: None</li><li><strong>Outgoing</strong>: SMTP (portÂ 25)</li><li><strong>Server</strong>: mail.cjcs.local</li><li><strong>Security</strong>: None</li></ul>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/06.png" alt="Account created in Mozilla Thunderbird onÂ MGR1.">
-        <figcaption><span class="lab">Fig 6.</span> Account created in Mozilla Thunderbird onÂ MGR1.</figcaption>
+      <ul><li><strong>admin@cjcs.local</strong> — Server privileges</li><li><strong>marcus.chen@cjcs.local</strong> — User privileges</li><li><strong>support@cjcs.local</strong> — Domain privileges</li></ul>
+      <p>I doubt I will delve too deeply into hMailServer administration, but I wanted to create account with varying privileges in case in came in handy down the line.</p>      <h2><span class="n">2</span>Logging In For the First Time</h2>
+      <ul><li>Download <a href="https://www.thunderbird.net/"><strong>Mozilla Thunderbird</strong></a></li><li><em>Use the following settings:</em></li><li><strong>Incoming</strong>: IMAP (port 143)</li><li><strong>Server</strong>: mail.cjcs.local</li><li><strong>Security</strong>: None</li><li><strong>Outgoing</strong>: SMTP (port 25)</li><li><strong>Server</strong>: mail.cjcs.local</li><li><strong>Security</strong>: None</li></ul>      <figure>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/05.png" alt="Account created in Mozilla Thunderbird on MGR1.">
+        <figcaption><span class="lab">Fig 5.</span> Account created in Mozilla Thunderbird on MGR1.</figcaption>
       </figure>
-      <p>Port connection successful, DNS resolved, accountÂ created.</p>
-      <p><strong>Sending The FirstÂ Email</strong></p>
-      <p>Letâ€™s take the basic functionality by sending an email to myself using the marcus.chen account and verify with from the hMailServer logs.</p>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/07.png" alt="Email sent, received, verified withÂ logs.">
-        <figcaption><span class="lab">Fig 7.</span> Email sent, received, verified withÂ logs.</figcaption>
+      <p>Port connection successful, DNS resolved, account created.</p>
+      <p><strong>Sending The First Email</strong></p>
+      <p>Let’s take the basic functionality by sending an email to myself using the marcus.chen account and verify with from the hMailServer logs.</p>      <figure>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/06.png" alt="Email sent, received, verified with logs.">
+        <figcaption><span class="lab">Fig 6.</span> Email sent, received, verified with logs.</figcaption>
       </figure>
-      <p>Success! I spun up my own email server and sent myself anÂ email.</p>
-      <p><strong>From KALI withÂ swaks</strong></p>
-      <p>Letâ€™s try sending an email via command line fromÂ KALI.</p>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/08.png" alt="Sending an email from the command line with â€œstolen credentialsâ€.">
-        <figcaption><span class="lab">Fig 8.</span> Sending an email from the command line with â€œstolen credentialsâ€.</figcaption>
+      <p>Success! I spun up my own email server and sent myself an email.</p>
+      <p><strong>From KALI with swaks</strong></p>
+      <p>Let’s try sending an email via command line from KALI.</p>      <figure>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/07.png" alt="Sending an email from the command line with “stolen credentials”.">
+        <figcaption><span class="lab">Fig 7.</span> Sending an email from the command line with “stolen credentials”.</figcaption>
       </figure>      <figure>
-        <img src="../../assets/images/installing-my-own-email-server-hmailserver/09.png" alt="The email was received.">
-        <figcaption><span class="lab">Fig 9.</span> The email was received.</figcaption>
+        <img src="../../assets/images/installing-my-own-email-server-hmailserver/08.png" alt="The email was received.">
+        <figcaption><span class="lab">Fig 8.</span> The email was received.</figcaption>
       </figure>
-      <p>Letâ€™s say an attacker gains credentials to an IT Support email accountâ€Šâ€”â€Šthis is exactly how they might phish an executive.</p>      <h2><span class="n">3</span>Next Steps</h2>
-      <p>The company database and employee login portal is up. The email server is online. I successfully sent an email from the command line using compromised credentials. The next step is to follow the full attack chain from network reconnaissance, to credential harvesting, to lateral movement and full domain compromise. KALI will send an email to MGR1 with a cloned login portal which causes them to type in their password to â€œthe employee login portalâ€. This will allow KALI to exfiltrate the company database and pivot to the domain controller for persistence.</p>
+      <p>Let’s say an attacker gains credentials to an IT Support email account — this is exactly how they might phish an executive.</p>      <h2><span class="n">3</span>Next Steps</h2>
+      <p>The company database and employee login portal is up. The email server is online. I successfully sent an email from the command line using compromised credentials. The next step is to follow the full attack chain from network reconnaissance, to credential harvesting, to lateral movement and full domain compromise. KALI will send an email to MGR1 with a cloned login portal which causes them to type in their password to “the employee login portal”. This will allow KALI to exfiltrate the company database and pivot to the domain controller for persistence.</p>
       <p><strong>Follow me:</strong></p>
-      <p><a href="https://johnnymeintel.com/">My Website</a></p>
+      <p>My Website</p>
       <p><a href="https://www.linkedin.com/in/johnny-meintel-3a9280269/">LinkedIn</a></p>
       <p><a href="https://x.com/548074G3">X</a></p>
-      <p><a href="https://github.com/johnnymeintel/johnnycybersec">GitHub</a></p><img src="https://medium.com/_/stat?event=post.clientViewed&referrerSource=full_rss&postId=ba6c6f178d33" width="1" height="1" alt="">
+      <p><a href="https://github.com/johnnymeintel/johnnycybersec">GitHub</a></p>
 
       <hr>
 
