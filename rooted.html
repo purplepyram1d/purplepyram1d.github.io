@@ -1,513 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>rooted. - Johnny Meintel</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg-primary:    #0a0a0a;
-      --bg-secondary:  #0f0f0f;
-      --bg-card:       #111111;
-      --bg-card-hover: #181818;
-      --accent-blue:   #4090e0;
-      --accent-green:  #52aeff;
-      --accent-red:    #ff6b6b;
-      --accent-purple: #c084fc;
-      --accent-amber:  #fbbf24;
-      --text-primary:  #e8e8e8;
-      --text-dim:      #888888;
-      --text-mid:      #c8c8c8;
-      --border:        rgba(255,255,255,0.07);
-      --border-soft:   rgba(255,255,255,0.035);
-      --placeholder:   #666666;
-      --accent-cyan:   #52aeff;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-family: 'IBM Plex Sans', sans-serif;
-      line-height: 1.6;
-    }
-
-    /* NAV */
-    nav {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(10,10,10,0.96);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 clamp(1.5rem, 6vw, 5rem);
-      height: 58px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .nav-back {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem;
-      color: var(--text-dim);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .nav-back:hover { color: var(--accent-blue); }
-    .nav-title {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.8rem;
-      color: var(--text-mid);
-    }
-    .nav-stat {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-    }
-    .nav-stat span { color: var(--accent-blue); font-weight: 600; }
-
-    /* LAYOUT */
-    .page {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 3rem clamp(1.5rem, 6vw, 5rem) 6rem;
-    }
-
-    /* HEADER */
-    .page-header {
-      margin-bottom: 2.5rem;
-      padding-bottom: 2rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .page-eyebrow {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--accent-blue);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-      display: block;
-    }
-    .page-header h1 {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text-primary);
-      margin-bottom: 0.4rem;
-    }
-    .page-header p {
-      color: var(--text-dim);
-      font-size: 0.88rem;
-      max-width: 540px;
-    }
-
-    /* STATS ROW */
-    .stats-row {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-      margin-bottom: 3rem;
-    }
-    .stat-block {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-    }
-    .stat-value {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1;
-    }
-    .stat-label {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.63rem;
-      color: var(--text-dim);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    /* PLATFORM SECTION */
-    .platform-section {
-      margin-bottom: 3.5rem;
-    }
-    .platform-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .platform-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .platform-rule {
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-    .platform-count {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--text-dim);
-    }
-
-    /* TIER */
-    .tier-block {
-      margin-bottom: 2rem;
-    }
-    .tier-label {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 1px solid var(--border-soft);
-    }
-
-    /* BOX GRID */
-    .box-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 0.5rem;
-    }
-    .box-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0.65rem 0.8rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      transition: background 0.15s;
-    }
-    .box-card.done {
-      border-left: 2px solid var(--accent-green);
-    }
-    .box-card.active {
-      border-left: 2px solid var(--accent-amber);
-    }
-    .box-card.locked {
-      opacity: 0.45;
-    }
-    .box-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .box-meta {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-    }
-    .box-os {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.58rem;
-      color: var(--text-dim);
-    }
-    .box-status {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.58rem;
-      padding: 1px 5px;
-      border-radius: 2px;
-    }
-    .box-status.done {
-      background: rgba(26,92,56,0.1);
-      color: var(--accent-green);
-      border: 1px solid rgba(26,92,56,0.2);
-    }
-    .box-status.active {
-      background: rgba(122,92,0,0.1);
-      color: var(--accent-amber);
-      border: 1px solid rgba(122,92,0,0.2);
-    }
-
-    .box-link {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.55rem;
-      color: var(--text-dim);
-      text-decoration: none;
-      letter-spacing: 0.05em;
-      margin-top: 0.1rem;
-      transition: color 0.15s;
-    }
-    .box-link:hover { color: var(--accent-blue); }
-
-    /* COMING SOON */
-    .coming-soon {
-      background: var(--bg-secondary);
-      border: 1px dashed var(--border);
-      border-radius: 3px;
-      padding: 1.2rem 1.4rem;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      font-style: italic;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log — purplepyram1d</title>
+<meta name="description" content="Completion tracker across HackTheBox, TryHackMe, and PortSwigger Academy.">
+<link rel="icon" href="assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="assets/css/site.css">
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
 
-  <nav>
-    <a href="index.html" class="nav-back">← johnnymeintel.com</a>
-    <span class="nav-title">rooted.</span>
-    <span class="nav-stat"><span>20</span> boxes complete</span>
-  </nav>
-
-  <div class="page">
-
-    <div class="page-header">
-      <span class="page-eyebrow">completion tracker</span>
-      <h1>rooted.</h1>
-      <p>Every platform. Every box. Full coverage. This page tracks completion across HTB, TryHackMe, PortSwigger Academy, and anything else worth finishing.</p>
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="index.html">Contents</a>
+        <a href="blog/index.html">Writing</a>
+        <a href="rooted.html" aria-current="page">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
     </div>
+  </header>
 
-    <div class="stats-row">
-      <div class="stat-block">
-        <span class="stat-value">20</span>
-        <span class="stat-label">Boxes complete</span>
-      </div>
-      <div class="stat-block">
-        <span class="stat-value">1</span>
-        <span class="stat-label">Platforms active</span>
-      </div>
-      <div class="stat-block">
-        <span class="stat-value">2/3</span>
-        <span class="stat-label">HTB SP tiers done</span>
-      </div>
-    </div>
-
-    <!-- HackTheBox -->
-    <div class="platform-section">
-      <div class="platform-header">
-        <span class="platform-name">HackTheBox</span>
-        <span class="platform-rule"></span>
-        <span class="platform-count">20 complete</span>
-      </div>
-
-      <div class="tier-block">
-        <div class="tier-label">Starting Point — Tier 0</div>
-        <div class="box-grid">
-          <div class="box-card done">
-            <span class="box-name">Meow</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Fawn</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Dancing</span>
-            <div class="box-meta">
-              <span class="box-os">Windows</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Redeemer</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Explosion</span>
-            <div class="box-meta">
-              <span class="box-os">Windows</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Preignition</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tier-block">
-        <div class="tier-label">Starting Point — Tier 1</div>
-        <div class="box-grid">
-          <div class="box-card done">
-            <span class="box-name">Mongod</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Synced</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Appointment</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Sequel</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Crocodile</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Responder</span>
-            <div class="box-meta">
-              <span class="box-os">Windows</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Three</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Funnel</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Bike</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Ignition</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Pennyworth</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Tactics</span>
-            <div class="box-meta">
-              <span class="box-os">Windows</span>
-              <span class="box-status done">rooted</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tier-block">
-        <div class="tier-label">Starting Point — Tier 2</div>
-        <div class="box-grid">
-          <div class="box-card done">
-            <span class="box-name">Archetype</span>
-            <div class="box-meta">
-              <span class="box-os">Windows</span>
-              <span class="box-status done">rooted</span>
-            </div>
-            <a class="box-link" href="https://github.com/purplepyram1d/Writeups/blob/main/HTB/Archetype/README.md" target="_blank">writeup →</a>
-          </div>
-          <div class="box-card done">
-            <span class="box-name">Oopsie</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-              <span class="box-status done">rooted</span>
-            </div>
-            <a class="box-link" href="https://github.com/purplepyram1d/Writeups/blob/main/HTB/Oopsie/README.md" target="_blank">writeup →</a>
-          </div>
-          <div class="box-card locked">
-            <span class="box-name">Vaccine</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-            </div>
-          </div>
-          <div class="box-card locked">
-            <span class="box-name">Unified</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-            </div>
-          </div>
-          <div class="box-card locked">
-            <span class="box-name">Included</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-            </div>
-          </div>
-          <div class="box-card locked">
-            <span class="box-name">Markup</span>
-            <div class="box-meta">
-              <span class="box-os">Windows</span>
-            </div>
-          </div>
-          <div class="box-card locked">
-            <span class="box-name">Base</span>
-            <div class="box-meta">
-              <span class="box-os">Linux</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TryHackMe -->
-    <div class="platform-section">
-      <div class="platform-header">
-        <span class="platform-name">TryHackMe</span>
-        <span class="platform-rule"></span>
-        <span class="platform-count">queued</span>
-      </div>
-      <div class="coming-soon">Queued — starting after HTB Starting Point is cleared.</div>
-    </div>
-
-    <!-- PortSwigger -->
-    <div class="platform-section">
-      <div class="platform-header">
-        <span class="platform-name">PortSwigger Academy</span>
-        <span class="platform-rule"></span>
-        <span class="platform-count">in progress</span>
-      </div>
-      <div class="coming-soon">Labs in progress alongside COAE coursework — full tracking coming.</div>
-    </div>
-
+  <div class="thesis">
+    <p><strong>Completion log.</strong></p>
   </div>
 
+  <main id="main">
+
+  <!-- ============ HACKTHEBOX ============ -->
+  <section>
+    <div class="sec-head"><h2>HackTheBox</h2><span class="count">20 complete</span></div>
+    <div class="grid">
+      <div class="rail"><span>starting point</span><span class="em">tier 0 · 1 · 2</span></div>
+      <div>
+
+        <div class="tier">
+          <h3>Starting Point — Tier 0</h3>
+          <div class="boxes">
+            <div class="box done"><span class="nm">Meow</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Fawn</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Dancing</span><span class="os">Windows</span></div>
+            <div class="box done"><span class="nm">Redeemer</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Explosion</span><span class="os">Windows</span></div>
+            <div class="box done"><span class="nm">Preignition</span><span class="os">Linux</span></div>
+          </div>
+        </div>
+
+        <div class="tier">
+          <h3>Starting Point — Tier 1</h3>
+          <div class="boxes">
+            <div class="box done"><span class="nm">Mongod</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Synced</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Appointment</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Sequel</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Crocodile</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Responder</span><span class="os">Windows</span></div>
+            <div class="box done"><span class="nm">Three</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Funnel</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Bike</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Ignition</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Pennyworth</span><span class="os">Linux</span></div>
+            <div class="box done"><span class="nm">Tactics</span><span class="os">Windows</span></div>
+          </div>
+        </div>
+
+        <div class="tier">
+          <h3>Starting Point — Tier 2</h3>
+          <div class="boxes">
+            <div class="box done"><span class="nm"><a href="writeups/archetype/Archetype.md">Archetype</a></span><span class="os">Windows</span></div>
+            <div class="box done"><span class="nm"><a href="writeups/oopsie/Oopsie.md">Oopsie</a></span><span class="os">Linux</span></div>
+            <div class="box todo"><span class="nm">Vaccine</span><span class="os">Linux</span></div>
+            <div class="box todo"><span class="nm">Unified</span><span class="os">Linux</span></div>
+            <div class="box todo"><span class="nm">Included</span><span class="os">Linux</span></div>
+            <div class="box todo"><span class="nm">Markup</span><span class="os">Windows</span></div>
+            <div class="box todo"><span class="nm">Base</span><span class="os">Linux</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
 </body>
 </html>

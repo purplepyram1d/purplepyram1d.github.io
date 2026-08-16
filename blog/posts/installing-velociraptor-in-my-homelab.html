@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Installing Velociraptor in My Homelab &mdash; purplepyram1d</title>
+<meta name="description" content="â€œVelociraptor is a unique, enterprise grade, open-source platform for endpoint monitoring, digital forensic and cyber response. Velociraptor covers the entirety of the attack life ">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+
+<link rel="canonical" href="https://johnnymeintel.com/blog/posts/installing-velociraptor-in-my-homelab.html">
+
+<meta property="og:title" content="Installing Velociraptor in My Homelab">
+<meta property="og:description" content="â€œVelociraptor is a unique, enterprise grade, open-source platform for endpoint monitoring, digital forensic and cyber response. Velociraptor covers the entirety of the attack life ">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-08-02</span>
+      <span class="em">DFIR</span>
+      <span>~6 min</span>
+    </div>
+
+    <article>
+      <h1>Installing Velociraptor in My Homelab</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-08-02</div>
+
+<blockquote>â€œVelociraptor is a unique, enterprise grade, open-source platform for endpoint monitoring, digital forensic and cyber response. Velociraptor covers the entirety of the attack life cycle, providing responders a powerful capability to address past, present and futureÂ events.â€</blockquote>
+      <p><a href="https://docs.velociraptor.app/docs/overview/">Source</a></p>
+      <p>Today I will be adding Velociraptor to my homelab which currently includes Sysmon and Wazuh. Sysmon and Wazuh provide an â€œalways-onâ€ detection platform that produces alerts based on certain activity occurring on the registered endpoints. Velociraptor answers point-in-time questions instead: what is true on that host rightÂ now.</p>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/01.png" alt="">
+      </figure>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/02.png" alt="">
+      </figure>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/03.png" alt="">
+      </figure>
+      <p>The service came up on the first try. By any reasonable measure I was done. Then I deleted all of it and built it again, because I could not have told you what half of it was actually doing. Following a sequence of commands and getting a working server is a different thing from understanding a workingÂ server.</p>      <h2><span class="n">1</span>Step 1â€Šâ€”â€ŠStage the Binary on LocalÂ Disk</h2>
+      <p>On my host Windows desktop, I ssh into my SIEM01 virtual machine first, and then run the following commands:</p><pre># Copy the downloaded binary from host machine to VM
+cp "/mnt/external/00 Setup/velociraptor-v0.77.1-linux-amd64" /tmp/velociraptor</pre><pre># Mark the binary executable so Linux will run it
+chmod +x /tmp/velociraptor</pre><pre># Confirm the binary runs and print its version
+/tmp/velociraptor version</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/04.png" alt="">
+      </figure>      <h2><span class="n">2</span>Step 2â€Šâ€”â€ŠGenerate theÂ Config</h2>
+      <p>Launch Velociraptorâ€™s interactive config generator:</p><pre># Launch the interactive config generator (writes the server config with an embedded private CA)
+/tmp/velociraptor config generate -i</pre>
+      <p>Using the following options:</p>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/05.png" alt="">
+      </figure>
+      <p>Two things bit me on version 0.77.1: the config generator tried to save a file containing private keys onto a network share, and it wrote localhost as the server address even though I typed the IP, which would have left every agent looking for the server on the wrong machine. Both are silent failures, so verify what actually got written instead of trusting what youÂ typed.</p>      <h2><span class="n">3</span>Step 3â€Šâ€”â€ŠDerive the ClientÂ Config</h2>
+      <p>This produces the settings file the agents willÂ carry:</p><pre># Read the server config and write out the matching client config
+/tmp/velociraptor --config /tmp/server.config.yaml config client &gt; /tmp/client.config.yaml</pre>      <h2><span class="n">4</span>Step 4â€Šâ€”â€ŠVerify and Fix the ServerÂ URL</h2><pre># Show the server_urls key and the line beneath it
+grep -A1 server_urls /tmp/client.config.yaml</pre><pre># Replace every localhost reference with the real server IP in both configs
+sed -i 's/localhost/10.10.10.5/g' /tmp/server.config.yaml /tmp/client.config.yaml</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/06.png" alt="">
+      </figure>      <h2><span class="n">5</span>Step 5â€Šâ€”â€ŠFix the GUI BindÂ Address</h2>
+      <p>Now to make the web console reachable from the host desktop instead of only from the serverÂ itself:</p><pre># Show each bind_address with the port line beneath it so you can identify which section is which
+grep -n -A1 "bind_address" /tmp/server.config.yaml</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/07.png" alt="">
+      </figure><pre># Change only line 65 (the GUI, port 8889) to listen on all interfaces
+sed -i '65s/127.0.0.1/0.0.0.0/' /tmp/server.config.yaml</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/08.png" alt="">
+      </figure>
+      <p>The more secure alternative (if not working in an isolated lab environment):</p>
+      <p><em>Leave the GUI on </em><em>127.0.0.1 and reach it through an ssh tunnel from your workstation with </em><em>ssh -L 8889:127.0.0.1:8889 blue_admin@10.10.10.5, then browse </em><em>https://127.0.0.1:8889. The console then never listens on the LAN at all. Use this posture anywhere less isolated than aÂ homelab.</em></p>      <h2><span class="n">6</span>Step 6â€Šâ€”â€ŠPlace and Lock theÂ Configs</h2>
+      <p>Move the config files out of temp and restrict read/write to root because server.config.yaml holds the CA private key, so anyone who reads it can impersonate yourÂ server.</p><pre># Create the datastore and logs directories, move both configs in, then restrict the server config to root only
+mkdir -p /opt/velociraptor/logs &amp;&amp; mv /tmp/server.config.yaml /tmp/client.config.yaml /opt/velociraptor/ &amp;&amp; chmod 600 /opt/velociraptor/server.config.yaml</pre>      <h2><span class="n">7</span>Step 7â€Šâ€”â€ŠBuild the ServiceÂ Package</h2>
+      <p>Take the Velociraptor binary and use debian server to turn it into a proper Ubuntu installer. Worth reading before you let it register a service: the postinst creates a dedicated account that cannot log in, locks the config to root, and grants the binary only the specific privileges it needs rather than running asÂ root.</p><pre># Change to /tmp, then build a .deb for the server role from the config (the .deb is written to /tmp)
+cd /tmp &amp;&amp; /tmp/velociraptor --config /opt/velociraptor/server.config.yaml debian server
+
+# Extract the package control files so you can read the install scripts
+dpkg-deb --control /tmp/velociraptor-server-0.77.1.amd64.deb /tmp/ctrl
+
+# Read the postinst script to see exactly what happens at install time
+cat /tmp/ctrl/postinst</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/09.png" alt="">
+      </figure><pre># List the built package so you can see its exact filename
+ls -l /tmp/*.deb</pre>      <h2><span class="n">8</span>Step 8â€Šâ€”â€ŠInstall</h2><pre># Install the package, which places the binary and config, registers the systemd unit, and enables boot start
+dpkg -i /tmp/velociraptor-server-0.77.1.amd64.deb</pre>      <h2><span class="n">9</span>Step 9â€Šâ€”â€ŠVerify</h2><pre># Confirm the service is active and running
+systemctl status velociraptor_server --no-pager
+
+# Confirm the GUI is now on 0.0.0.0:8889 and the frontend on *:8000
+ss -tlnp | grep -E '8000|8889'</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/10.png" alt="">
+      </figure><pre># Allow the frontend port (only if ufw is active)
+ufw allow 8000/tcp
+
+# Allow the GUI port (only if ufw is active)
+ufw allow 8889/tcp
+
+# From SIEM01, confirm the GUI answers over HTTPS (-k accepts the self-signed certificate)
+curl -k -I https://10.10.10.5:8889</pre>
+      <p>Then browse https://10.10.10.5:8889 from host desktop, accept the self-signed warning, and log in with the admin account created duringÂ setup:</p>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/11.png" alt="">
+      </figure>      <h2><span class="n">10</span>Step 10â€Šâ€”â€ŠEnrolling a ClientÂ Endpoint</h2>
+      <p>The 2TB drive is physically attached to my Windows host and published as an SMB share. Both VMs reach the same disk from opposite sides: the Ubuntu SIEM box has it CIFS-mounted at /mnt/external, and the Windows endpoint reaches it over UNC at \\10.10.10.10\External.</p><pre># Copy the client config onto the shared drive
+cp /opt/velociraptor/client.config.yaml "/mnt/external/00 Setup/"</pre>
+      <p>Now using my Windows 11 endpoint named WS01, create the working directory, copy the config file from SIEM01 along with the Velociraptor executable I downloaded from the official website. Note the IP rather than a hostname. The host is not domain-joined, so the labâ€™s DNS has no record for it, and \\CORP\External fails from the VMs even though Explorer happily shows the share under Network. Explorer finds it by broadcast discovery; the command line resolves through DNS and comes up empty. That mismatch looks like a permissions problem and is notÂ one.</p><pre># Create the directory to store the config files
+New-Item -ItemType Directory -Path "C:\Program Files\Velociraptor" -Force
+
+# Copy the binary executable
+Copy-Item "\\10.10.10.10\External\00 Setup\velociraptor-v0.77.1-windows-amd64.exe" "C:\Program Files\Velociraptor\velociraptor.exe"
+
+# Copy the client config next to the binary
+Copy-Item "\\10.10.10.10\External\00 Setup\client.config.yaml" "C:\Program Files\Velociraptor\client.config.yaml"
+
+# Confirm the binary runs and prints its version
+&amp; "C:\Program Files\Velociraptor\velociraptor.exe" version</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/12.png" alt="">
+      </figure>
+      <p>Before installing the service, run it as a foreground process to see the agent enrollment succeed:</p><pre># Run the agent in the foreground with verbose logging so you can watch it enroll before committing it as a service
+&amp; "C:\Program Files\Velociraptor\velociraptor.exe" --config "C:\Program Files\Velociraptor\client.config.yaml" client -v</pre>
+      <p>Enrollment was successful, no errors. Ctrl+C the foreground process and install as aÂ service:</p><pre># Register the agent as a Windows service so it runs continuously and starts on boot
+&amp; "C:\Program Files\Velociraptor\velociraptor.exe" --config "C:\Program Files\Velociraptor\client.config.yaml" service install
+
+# Confirm the service is registered and running
+Get-Service Velociraptor</pre>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/13.png" alt="">
+      </figure>
+      <p>Service is running on the endpoint, endpoint is visible in theÂ GUI.</p>
+      <p>The process tracker is a running notebook on the client endpoint that writes down every process birth and death as it happens, so you can walk the family tree backward afterward. Windows does not keep this by default: once a process exits, the record of what launched it isÂ gone.</p>
+      <p>The constraint that matters is that the tracker only records forward from the moment it starts. It is a security camera, not a time machine. If you fire an attack simulation before enabling it, the lineage query comes back empty and it looks like the tool is broken, when really it just never saw those processes get born. Enable it, confirm it is recording, and only then run anything you intend toÂ trace.</p>
+      <p>To enable it, add Windows.Events.TrackProcesses to the Client Events monitoring table:</p>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/14.png" alt="">
+      </figure>
+      <p>Velociraptor running alongside Wazuh, showing the same endpoint:</p>      <figure>
+        <img src="../../assets/images/installing-velociraptor-in-my-homelab/15.png" alt="">
+      </figure>
+      <p>Velociraptor is now running alongside Wazuh, watching the same endpoint from a different angle. Wazuh tells me something fired; Velociraptor lets me ask what was actually true on that machine at that moment. Next Iâ€™ll use it to answer the question Wazuh structurally cannot: whether the process claiming to be AnyDesk reallyÂ is.</p><img src="https://medium.com/_/stat?event=post.clientViewed&referrerSource=full_rss&postId=ff1ea2887f7c" width="1" height="1" alt="">
+
+      <hr>
+
+      <p class="kicker" style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);">
+        Rules and reproduction steps:
+        <a href="https://github.com/purplepyram1d/rmm-multiplicity" style="border-bottom:1px solid var(--rule);">github.com/purplepyram1d/rmm-multiplicity</a>
+      </p>
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

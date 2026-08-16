@@ -1,488 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- ═══════════════════════════════════════════════════
-  FILL IN: title, description, canonical URL, date, tags
-  ════════════════════════════════════════════════════ -->
-  <title>POST TITLE — Johnny Meintel</title>
-  <meta name="description" content="POST DESCRIPTION — one sentence, used by search engines." />
+<!-- ==========================================================
+     POST TEMPLATE
+     Copy this file to blog/posts/your-slug.html and edit.
+     Note the paths change one level deeper: ../../assets/...
+     Checklist:
+       1. title, description, og:title, og:description
+       2. canonical (only if syndicating elsewhere)
+       3. h1, .art-meta, .lede
+       4. the rail: date, technique, part, read time
+       5. add an entry to blog/index.html
+     ========================================================== -->
 
-  <!-- Canonical: if also published on Medium, point here.
-       If this IS the original, remove this tag or point to self. -->
-  <!-- <link rel="canonical" href="https://medium.com/@johnnymeintel/your-post-slug" /> -->
+<title>Post Title — purplepyram1d</title>
+<meta name="description" content="One sentence describing the post, written for someone who has not read the series.">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../assets/css/site.css">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg-primary:    #0a0a0a;
-      --bg-secondary:  #0f0f0f;
-      --bg-card:       #111111;
-      --bg-card-hover: #181818;
-      --accent-blue:   #4090e0;
-      --accent-green:  #52aeff;
-      --accent-red:    #ff6b6b;
-      --accent-purple: #c084fc;
-      --accent-amber:  #fbbf24;
-      --text-primary:  #e8e8e8;
-      --text-dim:      #888888;
-      --text-mid:      #c8c8c8;
-      --border:        rgba(255,255,255,0.07);
-      --border-soft:   rgba(255,255,255,0.035);
-      --placeholder:   #666666;
-      --accent-cyan:   #52aeff;
-    }
+<!-- If this post is ALSO on Medium, the canonical stays HERE so this
+     domain is the source of truth. Add rel=canonical pointing back to
+     this URL on the Medium import instead. -->
+<link rel="canonical" href="https://purplepyram1d.com/blog/posts/your-slug.html">
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-family: 'IBM Plex Sans', sans-serif;
-      line-height: 1.6;
-    }
-
-    /* NAV */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0;
-      z-index: 100;
-      background: rgba(10,10,10,0.96);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 clamp(1.5rem, 6vw, 5rem);
-      height: 58px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-
-    .nav-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
-    .nav-links a {
-      font-size: 0.82rem;
-      color: var(--text-dim);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--accent-blue); }
-    .nav-links a.active { color: var(--accent-blue); font-weight: 500; }
-
-    @media (max-width: 640px) { .nav-links { display: none; } }
-
-    /* ARTICLE LAYOUT */
-    .article-wrap {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: clamp(5rem, 9vw, 7rem) clamp(1.5rem, 6vw, 3rem) 6rem;
-    }
-
-    /* HEADER */
-    .post-header { margin-bottom: 3rem; }
-
-    .breadcrumb {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--text-dim);
-      margin-bottom: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .breadcrumb a { color: var(--accent-blue); text-decoration: none; }
-    .breadcrumb a:hover { text-decoration: underline; }
-    .breadcrumb-sep { color: rgba(92,107,122,0.4); }
-
-    .post-title {
-      font-size: clamp(1.6rem, 4vw, 2.4rem);
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-      color: var(--text-primary);
-      margin-bottom: 1.2rem;
-    }
-
-    .post-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      padding-bottom: 1.5rem;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .post-date, .post-reading-time {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--text-dim);
-    }
-
-    .post-reading-time { color: rgba(92,107,122,0.6); }
-
-    .post-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-
-    .post-tag {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.6rem;
-      padding: 2px 7px;
-      border-radius: 2px;
-      background: var(--bg-secondary);
-      color: var(--text-dim);
-      border: 1px solid var(--border-soft);
-    }
-
-    .medium-link {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      text-decoration: none;
-      margin-left: auto;
-      opacity: 0.6;
-      transition: opacity 0.15s;
-    }
-    .medium-link:hover { opacity: 1; }
-
-    /* PROSE */
-    .prose { font-size: 1rem; line-height: 1.85; color: var(--text-mid); }
-
-    .prose p { margin-bottom: 1.4rem; }
-
-    .prose h2 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 2.5rem 0 0.8rem;
-      letter-spacing: -0.01em;
-    }
-
-    .prose h3 {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 2rem 0 0.6rem;
-    }
-
-    .prose strong { color: var(--text-primary); font-weight: 600; }
-    .prose em { font-style: italic; }
-
-    .prose a {
-      color: var(--accent-blue);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .prose a:hover { opacity: 0.75; }
-
-    .prose ul, .prose ol {
-      margin: 0 0 1.4rem 1.4rem;
-    }
-    .prose li { margin-bottom: 0.4rem; }
-    .prose li::marker { color: var(--text-dim); }
-
-    .prose code {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.85em;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-soft);
-      border-radius: 3px;
-      padding: 1px 5px;
-      color: var(--accent-blue);
-    }
-
-    .prose pre {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1.2rem 1.4rem;
-      overflow-x: auto;
-      margin: 0 0 1.6rem;
-    }
-
-    .prose pre code {
-      background: none;
-      border: none;
-      padding: 0;
-      font-size: 0.82rem;
-      color: var(--text-mid);
-      border-radius: 0;
-    }
-
-    .prose blockquote {
-      border-left: 3px solid var(--accent-blue);
-      padding: 0.2rem 0 0.2rem 1.2rem;
-      margin: 0 0 1.4rem;
-      color: var(--text-dim);
-      font-style: italic;
-    }
-
-    .prose hr {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 2.5rem 0;
-    }
-
-    /* CALLOUT BOXES */
-    .callout {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent-blue);
-      border-radius: 2px;
-      padding: 1rem 1.2rem;
-      margin: 0 0 1.6rem;
-      font-size: 0.88rem;
-      line-height: 1.7;
-      color: var(--text-mid);
-    }
-
-    .callout.callout-warn { border-left-color: var(--accent-red); }
-    .callout.callout-note { border-left-color: var(--accent-green); }
-
-    .callout-label {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-bottom: 0.4rem;
-      color: var(--accent-blue);
-    }
-    .callout-warn .callout-label { color: var(--accent-red); }
-    .callout-note .callout-label { color: var(--accent-green); }
-
-    /* HTTP REQUEST/RESPONSE BLOCKS */
-    .http-block {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 0 0 1.6rem;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem;
-      line-height: 1.65;
-    }
-
-    .http-block-label {
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      padding: 0.4rem 1rem;
-      font-size: 0.62rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
-
-    .http-block-body { padding: 1rem; color: var(--text-mid); }
-    .http-method  { color: var(--accent-blue); font-weight: 600; }
-    .http-status-ok  { color: var(--accent-green); font-weight: 600; }
-    .http-status-err { color: var(--accent-red); font-weight: 600; }
-    .http-header  { color: var(--text-dim); }
-    .http-key     { color: var(--accent-blue); }
-    .http-val-mod { color: var(--accent-red); text-decoration: line-through; opacity: 0.7; }
-    .http-val-new { color: var(--accent-green); }
-    .http-comment { color: rgba(92,107,122,0.5); font-style: italic; }
-
-    /* POST FOOTER */
-    .post-footer {
-      margin-top: 4rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .post-footer-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .post-footer-link {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--accent-blue);
-      text-decoration: none;
-      transition: opacity 0.15s;
-    }
-    .post-footer-link:hover { opacity: 0.7; }
-
-    .post-footer-meta {
-      margin-top: 1.5rem;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.65rem;
-      color: rgba(92,107,122,0.5);
-      line-height: 1.8;
-    }
-
-    /* FOOTER */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 1.5rem clamp(1.5rem, 6vw, 5rem);
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-  </style>
+<meta property="og:title" content="Post Title">
+<meta property="og:description" content="One sentence describing the post.">
+<meta property="og:type" content="article">
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
 
-<nav>
-  <a href="../../index.html" class="nav-name">
-    <img src="../assets/images/logo-pyramid.png" alt="Johnny Meintel" width="33" height="28" style="display:block;flex-shrink:0;height:28px;width:auto" />
-    Johnny Meintel
-  </a>
-  <ul class="nav-links">
-    <li><a href="../../index.html#about">About</a></li>
-    <li><a href="../../index.html#skills">Tools</a></li>
-    <li><a href="../../index.html#labs">Research</a></li>
-    <li><a href="../../index.html#bounty">Bounty</a></li>
-    <li><a href="../index.html" class="active">Writing</a></li>
-    <li><a href="../../index.html#contact">Contact</a></li>
-  </ul>
-</nav>
-
-<article class="article-wrap">
-
-  <header class="post-header">
-    <div class="breadcrumb">
-      <a href="../index.html">Writing</a>
-      <span class="breadcrumb-sep">/</span>
-      <!-- POST TITLE SHORT FORM -->
-      <span>Post Title</span>
-    </div>
-
-    <!-- FILL IN -->
-    <h1 class="post-title">Your Post Title Goes Here</h1>
-
-    <div class="post-meta">
-      <span class="post-date">2026-04-11</span>       <!-- FILL IN -->
-      <span class="post-reading-time">0 min read</span> <!-- FILL IN -->
-      <div class="post-tags">
-        <span class="post-tag">tag-one</span>          <!-- FILL IN -->
-        <span class="post-tag">tag-two</span>
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
       </div>
-      <!-- Remove if not cross-posted to Medium -->
-      <!-- <a href="https://medium.com/@johnnymeintel/slug" target="_blank" class="medium-link">also on Medium ↗</a> -->
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../index.html">Contents</a>
+        <a href="index.html">Writing</a>
+        <a href="../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════════
-  WRITE YOUR POST BELOW.
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
 
-  Available components:
-    <p>              — body paragraph
-    <h2>             — section heading
-    <h3>             — sub-heading
-    <pre><code>      — code block
-    <code>           — inline code
-    <blockquote>     — pull quote
-    <hr>             — section break
-    .callout         — info box (add .callout-warn or .callout-note)
-    .http-block      — HTTP request/response display (see example below)
-
-  Delete the examples and write your actual post.
-  ════════════════════════════════════════════════ -->
-
-  <div class="prose">
-
-    <p>
-      Opening paragraph. Set the context — what you were testing, what you were looking for, why this is interesting. Don't bury the lead.
-    </p>
-
-    <h2>Section Heading</h2>
-
-    <p>
-      Body text. Use <strong>bold</strong> for emphasis, <code>inline code</code> for endpoint names, parameters, and short snippets.
-    </p>
-
-    <!-- CALLOUT EXAMPLE -->
-    <div class="callout">
-      <div class="callout-label">Note</div>
-      Use this for context, caveats, or key observations. Add <code>.callout-warn</code> for warnings, <code>.callout-note</code> for findings.
+    <!-- MARGIN RAIL: real metadata only, never decoration -->
+    <div class="rail">
+      <span>2026-00-00</span>
+      <span class="em">T0000</span>
+      <span>part 1 of 2</span>
+      <span>~00 min</span>
     </div>
 
-    <!-- CODE BLOCK EXAMPLE -->
-    <pre><code>POST /api/v1/account/update HTTP/1.1
-Host: app.example.com
-Authorization: Bearer eyJhbG...
+    <article>
+      <h1>Post Title Goes Here</h1>
+      <div class="art-meta">Johnny Meintel · 2026-00-00 · detection engineering</div>
 
-{
-  "user_id": "1",
-  "role": "admin"
-}</code></pre>
+      <p class="lede">The standfirst. One or two sentences that state the finding, not the topic. Someone should be able to read this alone and know why the post exists.</p>
 
-    <!-- HTTP BLOCK EXAMPLE — use for showing request/response pairs -->
-    <div class="http-block">
-      <div class="http-block-label">Request — modified</div>
-      <div class="http-block-body">
-        <span class="http-method">POST</span> /api/v1/account/update HTTP/1.1<br>
-        <span class="http-header">Authorization:</span> Bearer eyJhbG...<br>
-        <br>
-        "user_id": <span class="http-val-mod">"2847"</span> <span class="http-val-new">"1"</span><br>
-        "role": <span class="http-val-mod">"user"</span> <span class="http-val-new">"admin"</span>
-      </div>
-    </div>
+      <p>Opening paragraph. Set the problem in concrete terms before any tooling appears. Say what an attacker actually does and why the obvious defence fails.</p>
 
-    <div class="http-block">
-      <div class="http-block-label">Response</div>
-      <div class="http-block-body">
-        <span class="http-status-ok">200 OK</span><br>
-        <br>
-        { "role": <span class="http-val-new">"admin"</span> } <span class="http-comment">// accepted</span>
-      </div>
-    </div>
+      <h2><span class="n">1</span>Section heading</h2>
 
-    <h2>What This Means</h2>
+      <p>Body text. Keep the measure near 68 characters; the stylesheet handles it. Inline code like <code>win.eventdata.company</code> gets a subtle box.</p>
 
-    <p>
-      Analysis section. What does the behavior you observed actually mean? What's exploitable, what isn't, and why?
-    </p>
+      <pre>Copy-Item "C:\Program Files (x86)\AnyDesk\AnyDesk.exe" `
+          "C:\Users\Public\totally_legit.exe"</pre>
 
-    <blockquote>
-      Use blockquotes for direct quotes from documentation, responses from triagers, or key excerpts worth calling out.
-    </blockquote>
+      <!-- FIGURE: use .fig-box for terminal/log output, or a plain <img>
+           for a screenshot. Always caption what it PROVES, not what it is. -->
+      <figure>
+        <div class="fig-box">
+Image:            C:\Users\Public\totally_legit.exe<br>
+<strong>Company:          AnyDesk Software GmbH</strong><br>
+IntegrityLevel:   High
+        </div>
+        <figcaption><span class="lab">Fig 1.</span> Caption states what the reader should conclude. The name changed; the identity did not.</figcaption>
+      </figure>
 
-    <h2>Takeaway</h2>
-
-    <p>
-      One or two sentences on what a reader should leave with. What's the principle, not just the finding.
-    </p>
-
-  </div>
-
-  <!-- POST FOOTER -->
-  <footer class="post-footer">
-    <div class="post-footer-nav">
-      <a href="../index.html" class="post-footer-link">← Back to Writing</a>
-      <!-- Optional: link to next/prev post when they exist -->
-      <!-- <a href="next-post.html" class="post-footer-link">Next: Post Title →</a> -->
-    </div>
-    <div class="post-footer-meta">
-      <!-- Uncomment if cross-posted:
-      Originally published on <a href="https://medium.com/@johnnymeintel/slug" target="_blank" style="color:inherit">Medium</a>.
-      Canonical version is this page.
+      <!-- Screenshot variant:
+      <figure>
+        <img src="../../assets/images/fig2-example.png" alt="Describe what the screenshot shows.">
+        <figcaption><span class="lab">Fig 2.</span> What it proves.</figcaption>
+      </figure>
       -->
+
+      <h2><span class="n">2</span>The finding</h2>
+
+      <p>Explain the mechanism, then the limit. Every rule misses something; naming the blind spot is what separates this from a tutorial.</p>
+
+      <blockquote>
+        <p>Pull-quote for the one line worth remembering. Use sparingly, once or twice per post.</p>
+      </blockquote>
+
+      <h2><span class="n">3</span>Honest limits</h2>
+
+      <ul>
+        <li>What this does not catch.</li>
+        <li>What an attacker would do to evade it.</li>
+        <li>What you would need to close the gap.</li>
+      </ul>
+
+      <p>Detection is depth, not finality. The point is not that a layer is unbeatable; it is that beating all of them at once is expensive.</p>
+
+      <hr>
+
+      <p class="kicker" style="font-family:var(--mono);font-size:.75rem;color:var(--ink-3);">
+        Rules and reproduction steps:
+        <a href="https://github.com/purplepyram1d/rmm-multiplicity" style="border-bottom:1px solid var(--rule);">github.com/purplepyram1d</a>
+      </p>
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../index.html">&larr; contents</a>
+        </p>
+      </div>
     </div>
   </footer>
 
-</article>
-
-<footer>
-  <span>Johnny Meintel — Security Research</span>
-  <span>web application security · bug bounty · Python tooling</span>
-</footer>
-
+</div>
 </body>
 </html>
