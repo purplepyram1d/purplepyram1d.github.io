@@ -204,7 +204,7 @@ D056FB932C5A4821C328214E4F4988436650583A  Valid       AnyDesk.exe
 
 # Extract just the Subject field from the signing certificate (shows the real company that signed it)
 [WS01] C:\WINDOWS\system32 &gt; (Get-AuthenticodeSignature 'C:\Program Files (x86)\AnyDesk\AnyDesk.exe').SignerCertificate.Subject
-CN=AnyDesk Software GmbH, O=AnyDesk Software GmbH, L=Stuttgart, S=Baden-WÃƒÆ’Ã‚Â¼rttemberg, C=DE
+CN=AnyDesk Software GmbH, O=AnyDesk Software GmbH, L=Stuttgart, S=Baden-Württemberg, C=DE
 
 #           /
 #          / /
@@ -262,7 +262,7 @@ DA9105E8E66F11E8030B05B20EE9E1164ADCF893  Valid       TeamViewer.exe
 
 # Extract just the Subject field from the signing certificate (shows the real company that signed it)
 [WS01] C:\WINDOWS\system32 &gt; (Get-AuthenticodeSignature 'C:\Program Files\TeamViewer\TeamViewer.exe').SignerCertificate.Subject
-CN=TeamViewer Germany GmbH, O=TeamViewer Germany GmbH, L=GÃƒÆ’Ã‚Â¶ppingen, C=DE</pre>
+CN=TeamViewer Germany GmbH, O=TeamViewer Germany GmbH, L=Göppingen, C=DE</pre>
       <h2><span class="n">3</span>Fire Each Alert</h2>
       <h3><strong>Rule 100210</strong> - RMM launch detected via <code>win.eventdata.company</code></h3>
       <pre># Launch AnyDesk briefly so it emits one process-create event, then close it
