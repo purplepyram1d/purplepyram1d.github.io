@@ -224,6 +224,19 @@ section{margin-bottom:3.5rem;}
 .entry p{margin:0;color:var(--ink-2);max-width:none;text-wrap:pretty;}
 .entry .kicker{font-family:var(--mono);font-size:.6875rem;color:var(--ink-3);margin:.55rem 0 0;}
 
+.rooted-callout{
+  margin:1.5rem 0 0;padding:1rem 1.2rem 1.1rem;
+  border:1px solid var(--rule);border-left:2px solid var(--accent);
+  background:var(--surface);
+}
+.rooted-callout h3{
+  font-family:var(--sans);font-size:.9375rem;line-height:1.35;
+  font-weight:650;margin:.2rem 0 .4rem;color:var(--ink);
+}
+.rooted-callout h3 a{border-bottom:1px solid var(--accent);}
+.rooted-callout h3 a:hover{color:var(--accent);}
+.rooted-callout p{font-size:.875rem;line-height:1.55;margin:0;color:var(--ink-2);max-width:76ch;}
+
 /* state encoded in FORM, not colour */
 .state{display:inline-flex;align-items:center;gap:.4rem;}
 .state::before{content:"";width:.5rem;height:.5rem;flex:none;background:var(--mark);}
