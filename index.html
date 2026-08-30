@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>purplepyram1d — detection engineering notebook</title>
-<meta name="description" content="A working notebook on detection engineering. Building attacks in a homelab, then the detections that catch them. By Johnny Meintel.">
+<title>purplepyram1d | detection engineering notebook</title>
+<meta name="description" content="Johnny Meintel's detection engineering portfolio: an eleven-system homelab, reproducible security research, and documented defensive validation.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="assets/images/logo-pyramid.png">
 <link rel="stylesheet" href="assets/css/site.css">
-<meta property="og:title" content="purplepyram1d — detection engineering notebook">
-<meta property="og:description" content="Building attacks in a homelab, then the detections that catch them.">
+<meta property="og:title" content="purplepyram1d | detection engineering notebook">
+<meta property="og:description" content="An eleven-system homelab, reproducible security research, and documented defensive validation.">
 <meta property="og:type" content="website">
 </head>
 <body>
@@ -36,6 +36,99 @@
   </div>
 
   <main id="main">
+
+  <!-- ============ HOMELAB ============ -->
+  <section class="estate" aria-labelledby="estate-heading">
+    <div class="sec-head">
+      <h2 id="estate-heading">Homelab environment</h2>
+      <span class="count">3 physical hosts · 8 VMs</span>
+    </div>
+
+    <p class="estate-intro">A purpose-built enterprise and security lab running across three Windows hypervisors. The environment gives each detection a real identity, endpoint, service, collection, analytics, and adversary-emulation path.</p>
+
+    <div class="estate-hosts" aria-label="Physical hosts">
+      <div class="estate-host">
+        <span class="estate-label">CORP</span>
+        <strong>Enterprise</strong>
+        <span>Windows 11 Host · VMware Workstation</span>
+      </div>
+      <div class="estate-host">
+        <span class="estate-label">BLUETEAM</span>
+        <strong>Detection</strong>
+        <span>Windows 11 Host · VMware Workstation</span>
+      </div>
+      <div class="estate-host">
+        <span class="estate-label">ATTACKBOX</span>
+        <strong>Adversary</strong>
+        <span>Windows 11 Host · VMware Workstation</span>
+      </div>
+    </div>
+
+    <aside class="project-snub" aria-labelledby="rmm-project-title">
+      <div>
+        <span class="estate-label">Current flagship</span>
+        <h3 id="rmm-project-title">RMM abuse detection and response</h3>
+      </div>
+      <p>Four lab-validated Wazuh rules progress from RMM identity to multiplicity, causal lineage, and high-confidence corroboration across Sysmon and Velociraptor. <a href="blog/posts/one-rmm-is-it-two-is-an-incident.html">Read the case study&nbsp;&rarr;</a></p>
+    </aside>
+
+    <div class="table-scroll estate-table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">VM</th>
+            <th scope="col">Role</th>
+            <th scope="col">Platform</th>
+            <th scope="col">Core technologies</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="host">DC01</td>
+            <td>Identity and directory</td>
+            <td>Windows Server 2022</td>
+            <td class="tech">AD DS · DNS · Kerberos</td>
+          </tr>
+          <tr>
+            <td class="host">SRV01</td>
+            <td>Application services</td>
+            <td>Windows Server 2022</td>
+            <td class="tech">IIS/PHP · MySQL · hMailServer</td>
+          </tr>
+          <tr>
+            <td class="host">WS01 / WS02</td>
+            <td>Instrumented endpoints</td>
+            <td>Windows 11</td>
+            <td class="tech">Sysmon · Wazuh · Velociraptor</td>
+          </tr>
+          <tr>
+            <td class="host">SIEM01</td>
+            <td>Detection and DFIR</td>
+            <td>Ubuntu 26.04</td>
+            <td class="tech">Wazuh · Velociraptor · Splunk Universal Forwarder</td>
+          </tr>
+          <tr>
+            <td class="host">SIEM02</td>
+            <td>Analytics and decision layer</td>
+            <td>Linux</td>
+            <td class="tech">Splunk Enterprise · Wazuh · Velociraptor</td>
+          </tr>
+          <tr>
+            <td class="host">KALI</td>
+            <td>Adversary emulation</td>
+            <td>Kali Linux</td>
+            <td class="tech">Nmap · Impacket · NetExec · BloodHound</td>
+          </tr>
+          <tr>
+            <td class="host">C2-01</td>
+            <td>Isolated control plane</td>
+            <td>Ubuntu 26.04</td>
+            <td class="tech">Sliver · segmented lab services</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <!-- ============ LATEST ============ -->
   <section>
@@ -82,7 +175,7 @@
     <div class="grid">
       <div class="rail"><span>about</span></div>
       <div class="colophon">
-        <p>DC01, WS01, Kali. Sysmon, Wazuh, Velociraptor. SRV01, WS02, and on-demand Splunk are the next build stage.</p>
+        <p>I design controlled attack paths, collect the resulting telemetry, build detections, and retain the failures that explain why a rule or pipeline changed.</p>
         <p class="fine">
           <a href="https://github.com/purplepyram1d">github</a> &middot;
           <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a>

@@ -76,8 +76,8 @@ C:\Program Files\TeamViewer\TeamViewer.exe
 C:\Program Files (x86)\AnyDesk\AnyDesk.exe</pre>
       <h3><strong>Confirm WS01 is <code>active</code> in Wazuh and Velociraptor dashboards</strong></h3>
       <figure>
-        <img src="../../assets/images/rmm/01-VRPTR-Wazuh-WS01-Active.png" alt="WS01 reporting to both platforms. Nothing below works if either agent is disconnected.">
-        <figcaption><span class="lab">Fig 1.</span> WS01 reporting to both platforms. Nothing below works if either agent is disconnected.</figcaption>
+        <img src="../../assets/images/rmm/01-VRPTR-Wazuh-WS01-Active.png" alt="WS01 reporting to both platforms.">
+        <figcaption><span class="lab">Fig 1.</span> WS01 reporting to both platforms.</figcaption>
       </figure>
       <h3><strong>Wazuh dashboard columns</strong></h3>
       <pre>rule.level
@@ -142,7 +142,6 @@ rmm_detection.xml - RMM abuse detection - 100210 identify | 100211 multiplicity 
 
 &lt;/group&gt;</pre>
       <h2><span class="n">1</span>Questions to answer</h2>
-      <p>Answer these before running anything below. Naming the condition that decides each one is the point, not the yes or no.</p>
       <p><strong>1. Rule 100210 (identify, level 3)</strong></p>
       <p>You copy <code>AnyDesk.exe</code> to <code>totally_legit.exe</code> and launch the copy. Does the rule fire?</p>
       <p><strong>2. Rule 100211 (multiplicity, level 12)</strong></p>
