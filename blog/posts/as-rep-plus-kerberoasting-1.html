@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>AS-REP+Kerberoasting 1 | purplepyram1d</title>
+<meta name="description" content="AS-REP roasting and AES Kerberoasting captured from KALI, traced through domain controller events, detected in Wazuh, inspected in Wireshark, and tested with offline cracking.">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026082904">
+
+<link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/as-rep-plus-kerberoasting-1.html">
+
+<meta property="og:title" content="AS-REP+Kerberoasting 1">
+<meta property="og:description" content="AS-REP roasting and AES Kerberoasting captured from KALI, traced through domain controller events, detected in Wazuh, inspected in Wireshark, and tested with offline cracking.">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-09-02</span>
+      <span class="em">T1558</span>
+      <span>AD + detection</span>
+      <span>~18 min</span>
+    </div>
+
+    <article>
+      <h1>AS-REP+Kerberoasting 1</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-09-02 &middot; Active Directory and detection engineering</div>
+      <p class="lede">One deliberately vulnerable account exposes two Kerberos credential-access paths. I captured AS-REP roasting and Kerberoasting from KALI, cracked both artifacts offline, traced the KDC events, and tested Wazuh detections against what actually appeared on the wire.</p>
+<h2>Lab Setup and Kerberos Baseline</h2>
+<p>First, ensure the domain controller is configured to record Kerberos security events by using <code>auditpol</code>:</p>
+<pre><code class="language-powershell">auditpol /get /subcategory:&quot;Kerberos Authentication Service&quot;
+auditpol /get /subcategory:&quot;Kerberos Service Ticket Operations&quot;
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/01-auditpol.png" alt="Kerberos audit policy enabled on DC01." loading="lazy">
+  <figcaption><span class="lab">Fig 1.</span> Kerberos audit policy enabled on DC01.</figcaption>
+</figure>
+
+<p>Next, ensure Windows event 4768 (A Kerberos authentication ticket (TGT) was requested.) and 4769 (A Kerberos service ticket was requested.) are being logged by using <code>Get-WinEvent</code>:</p>
+<pre><code class="language-powershell">Get-WinEvent -FilterHashtable @{LogName=&#39;Security&#39;; Id=4768,4769} -MaxEvents 5 | Select-Object TimeCreated, Id, MachineName 
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/02-WinEvents.png" alt="Recent Kerberos authentication and service-ticket events in the DC01 Security log." loading="lazy">
+  <figcaption><span class="lab">Fig 2.</span> Recent Kerberos authentication and service-ticket events in the DC01 Security log.</figcaption>
+</figure>
+
+<p>Kerberos is a network authentication protocol that enables single sign-on in an Active Directory domain. To demonstrate, I created <code>WS02_User</code> on the domain controller and logged into the Windows 11 VM WS02 with those credentials. In the screenshot below, the right side shows <code>klist</code> from WS02, and the corresponding events on the left are from DC01&#39;s Security log using the following PowerShell command:</p>
+<pre><code class="language-powershell"># View the 4768/4769 events for WS02_User in a formatted table
+Get-WinEvent -FilterHashtable @{
+LogName=&#39;Security&#39;; Id=4768,4769; StartTime=(Get-Date).AddMinutes(-30)
+} | ForEach-Object { 
+$x=[xml]$_.ToXml(); $d=@{}; $x.Event.EventData.Data 
+| ForEach-Object { $d[$_.Name]=$_.&#39;#text&#39; }; 
+[pscustomobject]@{ Time=$_.TimeCreated; Id=$_.Id; User=$d[&#39;TargetUserName&#39;]; Service=$d[&#39;ServiceName&#39;]; Enc=$d[&#39;TicketEncryptionType&#39;]; IP=$d[&#39;IpAddress&#39;] } 
+} | Where-Object { $_.User -like &#39;WS02_User*&#39; } 
+| Format-Table -AutoSize
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/03-WS02User-Login.png" alt="WS02_User signed in to WS02, with the corresponding Kerberos tickets and DC01 events." loading="lazy">
+  <figcaption><span class="lab">Fig 3.</span> WS02_User signed in to WS02, with the corresponding Kerberos tickets and DC01 events.</figcaption>
+</figure>
+
+<h3>AS-REP Roast Setup</h3>
+<p><code>WS02_User</code> was modified so that <code>DoesNotRequirePreAuth</code> is <code>$true</code>. A requester can now send an AS-REQ for that username without first proving knowledge of the password-derived key. The KDC returns an AS-REP containing data encrypted with a key derived from the account password, which permits offline password guessing. This does not remove the account password or authenticate the requester as <code>WS02_User</code>; it exposes material that can be tested offline. Those offline guesses do not create failed logons or trigger an account lockout. This makes <code>WS02_User</code> AS-REP roastable.</p>
+<pre><code class="language-powershell"># View DoesNotRequirePreAuth from a workstation 
+$uac = ([adsisearcher]&quot;samaccountname=WS02_User&quot;).FindOne().Properties[&#39;useraccountcontrol&#39;][0]; [PSCustomObject]@{SamAccountName=&#39;WS02_User&#39;; DoesNotRequirePreAuth=[bool]($uac -band 0x400000)}
+
+# PreAuthenticationType 0 from DC01 after logging in on the workstation with PreAuth disabled
+Get-WinEvent -FilterHashtable @{LogName=&#39;Security&#39;; Id=4768} -MaxEvents 10 
+| Where-Object { $_.Message -match &#39;Pre-Authentication Type:\s+0&#39; } 
+| Format-List TimeCreated, Message
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/04-WSUser-PreAuth0.png" alt="WS02_User configured without Kerberos preauthentication, confirmed from the workstation and DC01." loading="lazy">
+  <figcaption><span class="lab">Fig 4.</span> WS02_User configured without Kerberos preauthentication, confirmed from the workstation and DC01.</figcaption>
+</figure>
+
+<p>In the screenshot above, the right side shows <code>DoesNotRequirePreAuth</code> as <code>True</code> on WS02. On the left, the DC01 event shows <code>Pre-Authentication Type: 0</code> after the <code>WS02_User</code> logon. The zero means the TGT request did not include Kerberos preauthentication. It does not mean the account has no password.</p>
+<p><em>Why does this happen in the real world?</em></p>
+<ul>
+<li>Some legacy devices, Unix integrations, or custom applications may be configured around authentication behavior that administrators believe requires preauthentication to be disabled.</li>
+<li>Administrators may disable preauthentication while troubleshooting and fail to restore the secure default.</li>
+<li>A migration or inherited service account may preserve the flag long after the original dependency is gone.</li>
+</ul>
+<h3>Kerberoast Setup</h3>
+<p>Kerberoasting, on the other hand, targets an account that owns an SPN. An SPN identifies a service instance and maps it to the account under which that service runs. Any authenticated domain user can request a service ticket for that SPN. Part of the returned ticket is protected with the service account&#39;s long-term key, commonly derived from its password, which permits offline password guessing without failed logons or account lockout. <code>WS02_User</code> has been assigned an HTTP SPN, which also makes it Kerberoastable.</p>
+<p>Using the same account as an interactive workstation user, an AS-REP target, and an SPN-backed service is a compact lab convenience. Production environments should separate human and service identities, and should use a group Managed Service Account where the application supports one.</p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/05-WS02User-SPN.png" alt="The SPN assigned to WS02_User for the Kerberoasting path." loading="lazy">
+  <figcaption><span class="lab">Fig 5.</span> The SPN assigned to WS02_User for the Kerberoasting path.</figcaption>
+</figure>
+
+<p><em>Why does this happen in the real world?</em></p>
+<ul>
+<li>Applications sometimes need a domain identity for network authentication, so administrators run a service under a domain user account and register an SPN to it. The risk rises when that account has a human-managed, weak, old, or reused password instead of a long random secret or a gMSA-managed password.</li>
+</ul>
+<hr>
+<h2>AS-REP Roasting</h2>
+<p>This walkthrough assumes the attacker has identified <code>10.10.10.11</code> as a domain controller and knows the roastable target username. Valid domain credentials are useful here only because <code>GetNPUsers</code> can query LDAP to enumerate accounts with preauthentication disabled. The actual AS-REQ for an identified no-preauthentication account does not require valid domain credentials.</p>
+<p>Stage the run directory:</p>
+<pre><code class="language-bash">KERB_GATE_RUN_ID=&quot;$(date -u +%Y%m%dT%H%M%SZ)&quot;
+KERB_GATE_DIR=&quot;kerberos-gate-${KERB_GATE_RUN_ID}&quot;
+mkdir -p &quot;${KERB_GATE_DIR}&quot;
+</code></pre>
+<p>Start a packet capture that records everything from KALI to DC01 over port 88 (default Kerberos port) and record the PID:</p>
+<pre><code class="language-bash">sudo tcpdump -ni eth1 -s0 -w &quot;${KERB_GATE_DIR}/asrep-wire.pcap&quot; \
+&quot;host 10.10.10.11 and port 88&quot; &amp; \
+KERB_GATE_CAPTURE_PID=$!
+</code></pre>
+<p>Now use the low-privilege <code>TEST_USER1</code> credentials to query the directory and request AS-REPs for accounts reported as not requiring preauthentication. The credentials support enumeration; they are not required to request an AS-REP for an already known vulnerable username.</p>
+<p>AS-REP roasting (automatic enumeration of all accounts that do not require pre-authentication):</p>
+<pre><code class="language-bash">impacket-GetNPUsers &#39;corp.local/TEST_USER1:Password123&#39; \
+  -dc-ip 10.10.10.11 \
+  -format hashcat \
+  -outputfile &quot;${KERB_GATE_DIR}/asrep-hashes.txt&quot; \
+  -request
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/06-WS02User-Hash.png" alt="Impacket retrieves AS-REP roast material for WS02_User." loading="lazy">
+  <figcaption><span class="lab">Fig 6.</span> Impacket retrieves AS-REP roast material for WS02_User.</figcaption>
+</figure>
+
+<p>Hash obtained. An attacker can use an offline password cracker such as John the Ripper with a candidate wordlist. A successful guess reveals the account password; the captured value is not itself the account&#39;s NT hash.</p>
+<pre><code class="language-bash">john --format=krb5asrep --wordlist=/usr/share/wordlists/rockyou.txt &quot;${KERB_GATE_DIR}/asrep-hashes.txt&quot;
+
+john --show --format=krb5asrep &quot;${KERB_GATE_DIR}/asrep-hashes.txt&quot; &gt; &quot;${KERB_GATE_DIR}/asrep-cracked.txt&quot;
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/07-WS02User-Pass.png" alt="John validates the lab password against the captured AS-REP material." loading="lazy">
+  <figcaption><span class="lab">Fig 7.</span> John validates the lab password against the captured AS-REP material.</figcaption>
+</figure>
+
+<p>Password is <code>Password123</code>.</p>
+<p>Stop the packet capture after the request completes:</p>
+<pre><code class="language-bash">sudo kill &quot;${KERB_GATE_CAPTURE_PID}&quot;
+wait &quot;${KERB_GATE_CAPTURE_PID}&quot; 2&gt;/dev/null || true
+</code></pre>
+<h3>What Does DC01 See?</h3>
+<pre><code class="language-powershell">Get-WinEvent -FilterHashtable @{
+LogName = &#39;Security&#39;
+Id = 4768
+StartTime = (Get-Date).AddMinutes(-15)
+} | Format-List *
+</code></pre>
+<p>Results:</p>
+<pre><code class="language-plaintext">Message: A Kerberos authentication ticket (TGT) was requested.
+
+Account Information:
+Account Name: WS02_User
+Supplied Realm Name: CORP.LOCAL
+User ID: S-1-5-21-953532086-3771123788-3498657558-4602
+MSDS-SupportedEncryptionTypes: 0x18 (AES128-SHA96, AES256-SHA96)
+Available Keys: AES-SHA1, RC4
+
+Service Information:
+Service Name: krbtgt
+Service ID: S-1-5-21-953532086-3771123788-3498657558-502
+MSDS-SupportedEncryptionTypes: 0x1F (DES, RC4, AES128-SHA96, AES256-SHA96)
+Available Keys: AES-SHA1, RC4
+
+Domain Controller Information:
+MSDS-SupportedEncryptionTypes: 0x1F (DES, RC4, AES128-SHA96, AES256-SHA96)
+Available Keys: AES-SHA1, RC4
+
+Network Information:
+Client Address: ::ffff:10.10.10.30
+Client Port: 33446
+Advertized Etypes: RC4-HMAC-NT
+
+Additional Information:
+Ticket Options: 0x50800000
+Result Code: 0x0
+Ticket Encryption Type: 0x12
+Session Encryption Type: 0x17
+Pre-Authentication Type: 0
+Pre-Authentication EncryptionType: 0x0
+
+Certificate Information:
+Certificate Issuer Name:
+Certificate Serial Number:
+Certificate Thumbprint:
+
+Ticket information
+Response ticket hash: E7GjUQOjTvL+zyS4N7UBRXq6IqZihgy3RKpfMwqtErE=
+
+Certificate information is only provided if a certificate was used for pre-authentication.
+
+Pre-authentication types, ticket options, encryption types and result codes are defined in RFC 4120.
+
+Id: 4768
+Version: 2
+Qualifiers:
+Level: 0
+Task: 14339
+Opcode: 0
+Keywords: -9214364837600034816
+RecordId: 321722
+ProviderName: Microsoft-Windows-Security-Auditing
+ProviderId: 54849625-5478-4994-a5ba-3e3b0328c30d
+LogName: Security
+ProcessId: 700
+ThreadId: 2308
+MachineName: DC01.corp.local
+UserId:
+TimeCreated: 9/1/2026 12:54:27 PM
+ActivityId:
+RelatedActivityId:
+ContainerLog: Security
+MatchedQueryIds: {}
+Bookmark: System.Diagnostics.Eventing.Reader.EventBookmark
+LevelDisplayName: Information
+OpcodeDisplayName: Info
+TaskDisplayName: Kerberos Authentication Service
+dsDisplayNames: {Audit Success}
+
+Properties: {System.Diagnostics.Eventing.Reader.EventProperty, System.Diagnostics.Eventing.Reader.EventProperty, System.Diagnostics.Eventing.Reader.EventProperty, System.Diagnostics.Eventing.Reader.EventProperty…}
+</code></pre>
+<ul>
+<li>Client Address identifies KALI at <code>10.10.10.30</code>, which is unusual for this account in this lab but is contextual evidence rather than proof of an attack.</li>
+<li>Advertized Etypes shows that this request offered only RC4-HMAC-NT.</li>
+</ul>
+<p>I logged off and back on to WS02 as WS02_User and reran the <code>Get-WinEvent</code> command to compare the Advertised Etypes:</p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/08-Advertised-Etypes.png" alt="KALI and Windows requests compared through their advertised encryption types." loading="lazy">
+  <figcaption><span class="lab">Fig 8.</span> KALI and Windows requests compared through their advertised encryption types.</figcaption>
+</figure>
+
+<p>The right side shows a Windows-origin logon by the same deliberately vulnerable account. It is not a secure negative control because <code>WS02_User</code> still has preauthentication disabled, so both requests correctly show Pre-Authentication Type <code>0</code>. This comparison isolates client behavior: the KALI request offered only RC4, while the Windows request offered the broader set supported by that workstation and its policy. A true secure negative control would re-enable preauthentication, or use an account that already requires it, and should normally show Pre-Authentication Type <code>2</code> for password authentication.</p>
+<p><em>What to look for to detect this:</em></p>
+<ul>
+<li>Successful Event ID 4768 with Pre-Authentication Type <code>0</code>, which proves that the KDC issued a TGT without preauthentication</li>
+<li>Session Encryption Type <code>0x17</code> and an RC4-only advertised set, which raise priority but do not independently prove roasting</li>
+<li>An unusual source for the target account, based on an established account and host baseline</li>
+<li>Repeated requests across several no-preauthentication accounts, especially from one source</li>
+</ul>
+<p>In this 4768, Ticket Encryption Type <code>0x12</code> describes the TGT encrypted for <code>krbtgt</code>. Session Encryption Type <code>0x17</code> describes the algorithm selected for the session key in the issued TGT. Neither field alone directly labels the client-facing AS-REP encrypted portion. The <code>$krb5asrep$23$</code> artifact and packet capture provide the direct proof that this observed AS-REP used RC4 for the offline-crackable material.</p>
+<h3>What Does the SIEM See?</h3>
+<p>I reattempted the AS-REP roast from Kali after building the following Wazuh ruleset:</p>
+<pre><code class="language-XML">&lt;group name=&quot;windows,kerberos,asreproast,&quot;&gt;
+
+  &lt;!-- Anchor: a successful 4768 (TGT request) with NO pre-auth, for a real user account. Machine ($) excluded.
+       4768 is NOT covered by 60106 (logon-success: 528|540|673|4624|4769), so chain the audit-success base 60103. --&gt;
+  &lt;rule id=&quot;100410&quot; level=&quot;3&quot;&gt;
+    &lt;if_sid&gt;60103&lt;/if_sid&gt;
+    &lt;field name=&quot;win.system.eventID&quot;&gt;^4768$&lt;/field&gt;
+    &lt;field name=&quot;win.eventdata.status&quot;&gt;^0x0$&lt;/field&gt;
+    &lt;field name=&quot;win.eventdata.preAuthType&quot;&gt;^0$&lt;/field&gt;
+    &lt;field name=&quot;win.eventdata.targetUserName&quot; negate=&quot;yes&quot; type=&quot;pcre2&quot;&gt;(?i)\$$&lt;/field&gt;
+    &lt;description&gt;Kerberos TGT requested with NO pre-auth for user $(win.eventdata.targetUserName) from $(win.eventdata.ipAddress)&lt;/description&gt;
+    &lt;mitre&gt;&lt;id&gt;T1558.004&lt;/id&gt;&lt;/mitre&gt;
+  &lt;/rule&gt;
+
+  &lt;!-- Higher-priority RC4 context. In 4768, ticketEncryptionType 0x12 describes the TGT protected for krbtgt,
+       while sessionKeyEncryptionType 0x17 records the session-key algorithm. The packet capture and extracted
+       $krb5asrep$23$ artifact provide direct proof of the RC4 AS-REP material in this run. --&gt;
+  &lt;rule id=&quot;100411&quot; level=&quot;10&quot;&gt;
+    &lt;if_sid&gt;100410&lt;/if_sid&gt;
+    &lt;field name=&quot;win.eventdata.sessionKeyEncryptionType&quot;&gt;^0x17$&lt;/field&gt;
+    &lt;description&gt;Possible AS-REP Roasting (RC4 downgrade): crackable RC4 AS-REP for $(win.eventdata.targetUserName) from $(win.eventdata.ipAddress)&lt;/description&gt;
+    &lt;mitre&gt;&lt;id&gt;T1558.004&lt;/id&gt;&lt;/mitre&gt;
+  &lt;/rule&gt;
+
+  &lt;!-- Sweep: one source pulls TGTs for many distinct no-preauth users fast (GetNPUsers over a userlist).
+       Correlates on SOURCE IP because AS-REP roasting needs no authenticated requester. Catches the AES roast too. --&gt;
+  &lt;rule id=&quot;100412&quot; level=&quot;12&quot; frequency=&quot;4&quot; timeframe=&quot;15&quot;&gt;
+    &lt;if_matched_sid&gt;100410&lt;/if_matched_sid&gt;
+    &lt;same_field&gt;win.eventdata.ipAddress&lt;/same_field&gt;
+    &lt;different_field&gt;win.eventdata.targetUserName&lt;/different_field&gt;
+    &lt;description&gt;Possible AS-REP Roasting (sweep): $(win.eventdata.ipAddress) requested 4+ no-preauth user TGTs within 15s&lt;/description&gt;
+    &lt;mitre&gt;&lt;id&gt;T1558.004&lt;/id&gt;&lt;/mitre&gt;
+  &lt;/rule&gt;
+
+&lt;/group&gt;
+</code></pre>
+<p>Raw JSON from rule <code>100411</code> firing. This alert is a high-priority correlation of no preauthentication with RC4 session-key negotiation. The packet capture and extracted hash establish the response&#39;s crackable format:</p>
+<pre><code class="language-JSON">{
+  &quot;agent&quot;: { &quot;name&quot;: &quot;DC01&quot; },
+  &quot;rule&quot;: {
+    &quot;id&quot;: &quot;100411&quot;,
+    &quot;level&quot;: 10,
+    &quot;description&quot;: &quot;Possible AS-REP Roasting (RC4 downgrade): crackable RC4 AS-REP for WS02_User from ::ffff:10.10.10.30&quot;,
+    &quot;groups&quot;: [&quot;windows&quot;, &quot;kerberos&quot;, &quot;asreproast&quot;],
+    &quot;mitre&quot;: { &quot;id&quot;: [&quot;T1558.004&quot;], &quot;technique&quot;: [&quot;AS-REP Roasting&quot;], &quot;tactic&quot;: [&quot;Credential Access&quot;] }
+  },
+  &quot;data&quot;: {
+    &quot;win&quot;: {
+      &quot;system&quot;: { &quot;eventID&quot;: &quot;4768&quot;, &quot;computer&quot;: &quot;DC01.corp.local&quot; },
+      &quot;eventdata&quot;: {
+        &quot;targetUserName&quot;: &quot;WS02_User&quot;,
+        &quot;ipAddress&quot;: &quot;::ffff:10.10.10.30&quot;,
+        &quot;serviceName&quot;: &quot;krbtgt&quot;,
+        &quot;status&quot;: &quot;0x0&quot;,
+        &quot;preAuthType&quot;: &quot;0&quot;,
+        &quot;clientAdvertizedEncryptionTypes&quot;: &quot;RC4-HMAC-NT&quot;,
+        &quot;ticketEncryptionType&quot;: &quot;0x12&quot;,
+        &quot;sessionKeyEncryptionType&quot;: &quot;0x17&quot;
+      }
+    }
+  },
+  &quot;timestamp&quot;: &quot;2026-09-01T13:40:06.318-0700&quot;
+}
+</code></pre>
+<p>Wazuh dashboard:</p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/09-Rule-100411-Fire.png" alt="Wazuh rule 100411 fires on the no-preauthentication request with RC4 context." loading="lazy">
+  <figcaption><span class="lab">Fig 9.</span> Wazuh rule 100411 fires on the no-preauthentication request with RC4 context.</figcaption>
+</figure>
+
+<h3>How To Prevent It From Happening</h3>
+<p>Set <code>DoesNotRequirePreAuth</code> to <code>$false</code>, identify and replace any legacy dependency that required the exception, and audit the directory for other accounts carrying the flag. Rotate the exposed account password after testing. Strong passwords reduce offline cracking risk, but they are a secondary control; restoring preauthentication removes the AS-REP roasting condition.</p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/10-WS02-PreAuth-Enabled.png" alt="Kerberos preauthentication restored for WS02_User." loading="lazy">
+  <figcaption><span class="lab">Fig 10.</span> Kerberos preauthentication restored for WS02_User.</figcaption>
+</figure>
+
+<h3>Bonus: What Does Wireshark See?</h3>
+<p>The <code>tcpdump</code> capture from the start of the attack (<code>${KERB_GATE_DIR}/asrep-wire.pcap</code>) recorded the exchange on port 88, so the roast can be read a third way, on the wire, alongside the DC event and the Wazuh alert. Open it in Wireshark and filter for Kerberos:</p>
+<pre><code>kerberos
+</code></pre>
+<p>At the Kerberos protocol level, this successful roast needs one AS-REQ and one AS-REP because the account does not require the usual preauthentication challenge. A packet capture can contain more than two physical frames because of DNS, TCP setup, segmentation, retransmission, or unrelated traffic, so identify the matching Kerberos messages rather than assuming an exact packet count.</p>
+<p><strong>The AS-REQ (the ask).</strong> Filter <code>kerberos.msg_type == 10</code>. This is the attacker asking the KDC for a TGT on behalf of WS02_User:</p>
+<ul>
+<li>The <code>cname</code> field names the target account, WS02_User, with no proof of who is actually asking.</li>
+<li>There is no <code>PA-ENC-TIMESTAMP</code> in the padata. A normal login carries that encrypted timestamp, or is answered with <code>KRB5KDC_ERR_PREAUTH_REQUIRED</code> first. Its absence here is the Pre-Authentication Type 0 signature, seen on the wire instead of in the event log.</li>
+<li>The requested etype is RC4 only (<code>eTYPE-ARCFOUR-HMAC-MD5</code>, 23), the downgrade the tool forced.</li>
+</ul>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/17-Wireshark1.png" alt="The AS-REQ asks for WS02_User without a PA-ENC-TIMESTAMP and requests RC4." loading="lazy">
+  <figcaption><span class="lab">Fig 11.</span> The AS-REQ asks for WS02_User without a PA-ENC-TIMESTAMP and requests RC4.</figcaption>
+</figure>
+
+<p><strong>The AS-REP (the answer).</strong> Filter <code>kerberos.msg_type == 11</code>. The KDC returns the ticket, and the part that matters is <code>enc-part</code>: a blob encrypted with a key derived from WS02_User&#39;s password, tagged etype 23 (RC4). </p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/17-Wireshark2.png" alt="The KDC returns an AS-REP whose encrypted part uses RC4." loading="lazy">
+  <figcaption><span class="lab">Fig 12.</span> The KDC returns an AS-REP whose encrypted part uses RC4.</figcaption>
+</figure>
+
+<p><em>What to look for on the wire:</em></p>
+<ul>
+<li>A bare AS-REQ (<code>msg_type 10</code>) with no <code>PA-ENC-TIMESTAMP</code> padata</li>
+<li>An etype request of RC4 (23) only</li>
+<li>A matching AS-REP (<code>msg_type 11</code>) whose <code>enc-part</code> is tagged etype 23</li>
+<li>A source IP that is not the workstation the named account normally logs in from</li>
+</ul>
+<hr>
+<h2>Kerberoasting</h2>
+<p>WS02_User now has Pre-Authentication enabled, but is still registered as an HTTP service with a valid SPN and is therefore still a Kerberoasting target. Kali can attempt to discover any valid user accounts tied to a SPN using the same TEST_USER1 credentials with this command:</p>
+<pre><code class="language-bash">impacket-GetUserSPNs &#39;corp.local/TEST_USER1&#39; \
+  -dc-ip 10.10.10.11 \
+  -request \
+  -outputfile &quot;${KERB_GATE_DIR}/tgs.txt&quot;
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/11-Kerb-Attempt.png" alt="The initial Kerberoasting attempt fails because the requested encryption path is unsupported." loading="lazy">
+  <figcaption><span class="lab">Fig 13.</span> The initial Kerberoasting attempt fails because the requested encryption path is unsupported.</figcaption>
+</figure>
+
+<p><code>WS02_User</code> was found again, but this installed Impacket workflow requested an encryption path the KDC would not issue for the AES-only target, so it returned:</p>
+<pre><code class="language-bash">[-] Principal: corp.local\WS02_User - Kerberos SessionError: KDC_ERR_ETYPE_NOSUPP(KDC has no support for encryption type)
+</code></pre>
+<p>I found this article in an attempt to get around it:</p>
+<p><a href="https://trustedsec.com/blog/the-art-of-bypassing-kerberoast-detections-with-orpheus">TrustedSec - The Art of Bypassing Kerberoast Detections with Orpheus</a></p>
+<p>Installed Orpheus:</p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/12-Orpheus-Menu.png" alt="Orpheus configured for the controlled Kerberoasting test." loading="lazy">
+  <figcaption><span class="lab">Fig 14.</span> Orpheus configured for the controlled Kerberoasting test.</figcaption>
+</figure>
+
+<p>After switching the Encryption to 18 the WS02_User was found again along with the <code>$krb5tgs$18</code> hash:</p>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/13-Orpheus-WS02User.png" alt="Orpheus identifies WS02_User as the selected service-account target." loading="lazy">
+  <figcaption><span class="lab">Fig 15.</span> Orpheus identifies WS02_User as the selected service-account target.</figcaption>
+</figure>
+
+<figure>
+  <img src="../../assets/images/kerberos-roasting/13-Orpheus-WS02User-Spns.png" alt="Orpheus returns AES Kerberoast material for the target." loading="lazy">
+  <figcaption><span class="lab">Fig 16.</span> Orpheus returns AES Kerberoast material for the target.</figcaption>
+</figure>
+
+<p><em>Why this works:</em>
+The KDC selects the service-ticket encryption type from the intersection of the client&#39;s requested types, the service account&#39;s available keys and configured encryption support, and KDC or domain policy. The attacker can influence the request but cannot force the KDC to issue an encryption type for which the target and policy provide no usable key. <code>WS02_User</code> is configured for AES through <code>msDS-SupportedEncryptionTypes 0x18</code>, so the RC4-oriented request failed with <code>KDC_ERR_ETYPE_NOSUPP</code>. Orpheus succeeded by requesting the supported AES256 eType 18. The resulting <code>$krb5tgs$18$</code> material can still be attacked with an offline wordlist, but it requires a different cracking mode and is substantially more expensive to test than RC4. It also bypasses a detector that watches only for Ticket Encryption Type <code>0x17</code>.</p>
+<p>I used Hashcat mode <code>19700</code> for the AES256 TGS-REP and cracked the hash. The John build installed on KALI lists <code>krb5tgs</code> as TGS eType 23 only; its separate <code>krb5-18</code> format is for Kerberos database material, not a <code>$krb5tgs$18$</code> artifact.</p>
+<pre><code class="language-bash">hashcat -m 19700 spns.txt /usr/share/wordlists/rockyou.txt --force
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/14-SPNs-Cracked.png" alt="Hashcat validates the lab password against the AES256 TGS artifact." loading="lazy">
+  <figcaption><span class="lab">Fig 17.</span> Hashcat validates the lab password against the AES256 TGS artifact.</figcaption>
+</figure>
+
+<p>Password is <code>Password123</code> (still).</p>
+<h3>What Does DC01 See?</h3>
+<pre><code class="language-powershell">Get-WinEvent -FilterHashtable @{
+LogName = &#39;Security&#39;
+Id = 4769
+StartTime = (Get-Date).AddMinutes(-15)
+} | Format-List *
+</code></pre>
+<pre><code class="language-plaintext">TimeCreated : 9/2/2026 12:57:01 AM  
+Message : A Kerberos service ticket was requested.
+
+Account Information:  
+Account Name: TEST_USER1@CORP.LOCAL  
+Account Domain: CORP.LOCAL  
+Logon GUID: {9525e3e4-fb93-ba10-3dbd-a094729eaa9f}  
+MSDS-SupportedEncryptionTypes: N/A  
+Available Keys: N/A
+
+Service Information:  
+Service Name: WS02_User  
+Service ID: S-1-5-21-953532086-3771123788-3498657558-4602  
+MSDS-SupportedEncryptionTypes: 0x18 (AES128-SHA96, AES256-SHA96)  
+Available Keys: AES-SHA1, RC4
+
+Domain Controller Information:  
+MSDS-SupportedEncryptionTypes: 0x1F (DES, RC4, AES128-SHA96, AES256-SHA96)  
+Available Keys: AES-SHA1, RC4
+
+Network Information:  
+Client Address: ::ffff:10.10.10.30  
+Client Port: 59760  
+Advertized Etypes: AES256-CTS-HMAC-SHA1-96
+
+Additional Information:  
+Ticket Options: 0x40810010  
+Ticket Encryption Type: 0x12  
+Session Encryption Type: 0x12  
+Failure Code: 0x0  
+Transited Services: -
+
+Ticket Information:  
+Request ticket hash: 4BEyDAKFbYg4DgRVbHnfABp3cs/V9jSPadEC9E+0yO0=  
+Response ticket hash: emiRyamF6OuTN9ydmldZUctugEhoLrJrMvM3Rik14pg=
+
+This event is generated every time access is requested to a resource such as a computer or Windows service. The service name indicates the resource to which access was requested.
+
+This event can be correlated with Windows logon events by comparing the Logon GUID fields. The logon event occurs on the accessed machine, which is often different from the domain controller that issued the service ticket.
+
+Pre-authentication types, ticket options, encryption types, and result codes are defined in RFC 4120.
+</code></pre>
+<ul>
+<li>Ticket Options: 0x40810010 - Forwardable, Renewable, Canonicalize, Renewable-ok</li>
+<li>This captured request advertised only <code>AES256-CTS-HMAC-SHA1-96</code>. Normal Windows requests sampled in this lab usually advertised a broader ordered set, but the exact set depends on client, account keys, and policy. A single advertised type is useful context, not standalone tool attribution.</li>
+</ul>
+<h3>What Does the SIEM See?</h3>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/16-Orpheus-Fired.png" alt="The corrected Wazuh anchor records the successful AES service-ticket request." loading="lazy">
+  <figcaption><span class="lab">Fig 18.</span> The corrected Wazuh anchor records the successful AES service-ticket request.</figcaption>
+</figure>
+
+<p>The first version chained rule <code>100400</code> to built-in rule <code>60106</code>. The event reached <code>archives.json</code> with every required field, but the custom rule did not fire. The cause was Wazuh rule traversal. Built-in child rule <code>92651</code> matched the IPv4 portion of <code>::ffff:10.10.10.30</code> and discarded the event at level 0 before the later custom child was evaluated.</p>
+<p>Changing the custom anchor to the broader Windows group avoids that built-in child branch:</p>
+<pre><code class="language-xml">&lt;group name=&quot;windows,kerberos,kerberoasting,&quot;&gt;
+
+  &lt;rule id=&quot;100400&quot; level=&quot;3&quot;&gt;
+    &lt;if_group&gt;windows&lt;/if_group&gt;
+    &lt;field name=&quot;win.system.eventID&quot;&gt;^4769$&lt;/field&gt;
+    &lt;field name=&quot;win.eventdata.status&quot;&gt;^0x0$&lt;/field&gt;
+    &lt;field name=&quot;win.eventdata.serviceName&quot; negate=&quot;yes&quot; type=&quot;pcre2&quot;&gt;(?i)(\$$|^krbtgt$)&lt;/field&gt;
+    &lt;description&gt;Kerberos TGS requested for user service account $(win.eventdata.serviceName) by $(win.eventdata.targetUserName)&lt;/description&gt;
+    &lt;mitre&gt;&lt;id&gt;T1558.003&lt;/id&gt;&lt;/mitre&gt;
+    &lt;group&gt;kerberoast_tgs,&lt;/group&gt;
+  &lt;/rule&gt;
+
+  &lt;rule id=&quot;100401&quot; level=&quot;10&quot;&gt;
+    &lt;if_sid&gt;100400&lt;/if_sid&gt;
+    &lt;field name=&quot;win.eventdata.ticketEncryptionType&quot;&gt;^0x17$&lt;/field&gt;
+    &lt;description&gt;Possible Kerberoasting (RC4): RC4 ticket for user SPN $(win.eventdata.serviceName) requested by $(win.eventdata.targetUserName) from $(win.eventdata.ipAddress)&lt;/description&gt;
+    &lt;mitre&gt;&lt;id&gt;T1558.003&lt;/id&gt;&lt;/mitre&gt;
+    &lt;group&gt;kerberoast_rc4,&lt;/group&gt;
+  &lt;/rule&gt;
+
+  &lt;rule id=&quot;100402&quot; level=&quot;12&quot; frequency=&quot;4&quot; timeframe=&quot;15&quot;&gt;
+    &lt;if_matched_sid&gt;100400&lt;/if_matched_sid&gt;
+    &lt;same_field&gt;win.eventdata.targetUserName&lt;/same_field&gt;
+    &lt;different_field&gt;win.eventdata.serviceName&lt;/different_field&gt;
+    &lt;description&gt;Possible Kerberoasting (burst): $(win.eventdata.targetUserName) requested 4+ distinct user service tickets within 15s from $(win.eventdata.ipAddress)&lt;/description&gt;
+    &lt;mitre&gt;&lt;id&gt;T1558.003&lt;/id&gt;&lt;/mitre&gt;
+    &lt;group&gt;kerberoast_burst,&lt;/group&gt;
+  &lt;/rule&gt;
+
+&lt;/group&gt;
+</code></pre>
+<p>After the corrected file passed <code>wazuh-analysisd -t</code> and the manager restarted healthy, a fresh service-ticket request produced:</p>
+<pre><code class="language-text">2026-09-02T01:46:58.076-0700
+Rule: 100400, level 3
+Requester: TEST_USER1@CORP.LOCAL
+Service account: WS02_User
+Ticket encryption: 0x12, AES256
+Source: ::ffff:10.10.10.30
+</code></pre>
+<ul>
+<li><code>100400</code> fired because this was a successful 4769 for the user-backed service account <code>WS02_User</code>.</li>
+<li><code>100401</code> correctly stayed silent because the KDC issued AES256 <code>0x12</code>, not RC4 <code>0x17</code>.</li>
+<li><code>100402</code> correctly stayed silent because this test requested one service account, not four distinct accounts inside 15 seconds.</li>
+</ul>
+<p>The single advertised AES256 algorithm is useful context because normal Windows samples in this lab usually advertise a broader named set. It is not enough to attribute the request to Orpheus. The same fields can vary with tool version and request settings, so attribution needs another evidence source or a broader negative-control study.</p>
+<h3>How To Prevent It From Happening</h3>
+<p>The goal is to reduce exposed accounts and make returned ticket material impractical to crack. Remove unused SPNs, avoid running services under ordinary human accounts, use long random and regularly rotated secrets for remaining service accounts, and eliminate RC4 dependencies. </p>
+<h3>Bonus: What Does Wireshark See?</h3>
+<p>The Windows 4769 event and Wazuh alert show what the KDC recorded. A packet capture shows the actual TGS exchange between KALI and DC01. For this rerun I am capturing both UDP and TCP port 88 because Kerberos can use either transport.</p>
+<p>Open the PCAP in Wireshark and begin with a narrow conversation filter:</p>
+<pre><code class="language-text">kerberos &amp;&amp; ip.addr == 10.10.10.30 &amp;&amp; ip.addr == 10.10.10.11
+</code></pre>
+<p>Then isolate the service-ticket exchange:</p>
+<pre><code class="language-text">kerberos.msg_type == 12 || kerberos.msg_type == 13
+</code></pre>
+<figure>
+  <img src="../../assets/images/kerberos-roasting/17-Wireshark3.png" alt="The successful TGS-REQ from KALI requests the WS02_User service ticket with AES256." loading="lazy">
+  <figcaption><span class="lab">Fig 19.</span> The successful TGS-REQ from KALI requests the WS02_User service ticket with AES256.</figcaption>
+</figure>
+
+<figure>
+  <img src="../../assets/images/kerberos-roasting/17-Wireshark4.png" alt="The matching TGS-REP contains the AES256-encrypted service ticket. Wireshark highlights the missing decryption key as expected." loading="lazy">
+  <figcaption><span class="lab">Fig 20.</span> The matching TGS-REP contains the AES256-encrypted service ticket. Wireshark highlights the missing decryption key as expected.</figcaption>
+</figure>
+
+<p>The yellow <code>Missing keytype 18 usage 8 or 9</code> highlight is Wireshark Expert Information. Wireshark sees AES256-encrypted data but does not possess the required Kerberos key or session key to decrypt it. That is expected and does not mean the packet is malformed or the request failed.</p>
+<p><em>What to look for on the wire:</em></p>
+<ul>
+<li>A TGS-REQ from <code>10.10.10.30</code> to <code>10.10.10.11</code> for the service account shown in the capture as <code>corp.local\WS02_User</code></li>
+<li>A matching successful TGS-REP from DC01</li>
+<li>Decimal eType <code>18</code> in the returned service ticket, matching Event 4769 value <code>0x12</code></li>
+<li>The encrypted service-ticket cipher that Orpheus exports as <code>$krb5tgs$18$</code></li>
+<li>No <code>KDC_ERR_ETYPE_NOSUPP</code> in the successful AES run</li>
+</ul>
+<p>The PCAP proves that a service ticket was requested and issued with AES256. It does not prove that the password was cracked, that Orpheus was the specific client, or that the request was malicious. The tool output proves the hash artifact was extracted, Hashcat proves the password guess succeeded, Event 4769 identifies the requester and source, and Wazuh records the detection. Those artifacts together tell the complete story.</p>
+<h2>References</h2>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4768">Microsoft Event 4768 field reference</a></li>
+<li><a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4769">Microsoft Event 4769 field reference</a></li>
+<li><a href="https://attack.mitre.org/techniques/T1558/004/">MITRE ATT&amp;CK T1558.004: AS-REP Roasting</a></li>
+<li><a href="https://attack.mitre.org/techniques/T1558/003/">MITRE ATT&amp;CK T1558.003: Kerberoasting</a></li>
+<li><a href="https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/rules.html">Wazuh rules syntax</a></li>
+</ul>
+
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
