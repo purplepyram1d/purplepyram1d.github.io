@@ -1,15 +1,17 @@
-/* Self-hosted Cascadia Code, Microsoft v2407.24. See ../fonts/CascadiaCode-LICENSE.txt. */
+/* Self-hosted Adobe Source fonts. Licenses are included in ../fonts/. */
 @font-face{
-  font-family:'Cascadia Code';
-  font-style:normal;
-  font-weight:200 700;
-  font-display:swap;
-  src:url('../fonts/CascadiaCode.woff2') format('woff2');
+  font-family:'Source Sans 3';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('../fonts/SourceSans3-Upright.woff2') format('woff2');
 }
 @font-face{
-  font-family:'Cascadia Code';
-  font-style:italic;
-  font-weight:200 700;
-  font-display:swap;
-  src:url('../fonts/CascadiaCodeItalic.woff2') format('woff2');
+  font-family:'Source Sans 3';font-style:italic;font-weight:200 900;font-display:swap;
+  src:url('../fonts/SourceSans3-Italic.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Source Code Pro';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('../fonts/SourceCodePro-Upright.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Source Code Pro';font-style:italic;font-weight:200 900;font-display:swap;
+  src:url('../fonts/SourceCodePro-Italic.woff2') format('woff2');
 }

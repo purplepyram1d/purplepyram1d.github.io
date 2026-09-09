@@ -1,10 +1,11 @@
-@import url('fonts.css?v=2026090901');
+@import url('fonts.css?v=2026090903');
 /* ============================================================
    purplepyram1d | detection engineering notebook
    Design system. Restrained Rose Pine, research-journal layout.
    ============================================================ */
 
 :root{
+  color-scheme:light;
   /* Rose Pine Dawn, adjusted for small-text contrast */
   --paper:#FAF4ED;
   --paper-2:#F2E9E1;
@@ -19,36 +20,16 @@
   --mark:#806B98;
 
   /* type roles */
-  --serif:var(--mono);
-  --mono:'Cascadia Code',Consolas,'DejaVu Sans Mono',monospace;
-  --sans:var(--mono);
+  --serif:var(--sans);
+  --mono:var(--sans);
+  --code:'Source Code Pro',Consolas,'DejaVu Sans Mono',monospace;
+  --sans:'Source Sans 3','Segoe UI',Arial,sans-serif;
 
   /* measure + grid */
   --measure:68ch;
   --rail:13rem;
   --gap:2.75rem;
   --shell:118rem;
-}
-
-@media (prefers-color-scheme:dark){
-  :root{
-    --paper:#111214; --paper-2:#17181C; --surface:#191A1F;
-    --ink:#E5E6E9; --ink-2:#BEC0C6; --ink-3:#858892;
-    --rule:#34353D; --rule-soft:#25262C; --accent:#9585AA;
-    --accent-soft:#1D1A22; --mark:#9585AA;
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#111214; --paper-2:#17181C; --surface:#191A1F;
-  --ink:#E5E6E9; --ink-2:#BEC0C6; --ink-3:#858892;
-  --rule:#34353D; --rule-soft:#25262C; --accent:#9585AA;
-  --accent-soft:#1D1A22; --mark:#9585AA;
-}
-:root[data-theme="light"]{
-  --paper:#FAF4ED; --paper-2:#F2E9E1; --surface:#FFFAF3;
-  --ink:#403B59; --ink-2:#5F5975; --ink-3:#6F6982;
-  --rule:#D8CFD2; --rule-soft:#E8DFDC; --accent:#806B98;
-  --accent-soft:#EEE5F1; --mark:#806B98;
 }
 
 /* ---------- base ---------- */
@@ -308,17 +289,17 @@ article h3{font-size:calc(1.0625rem + 1pt);font-weight:600;margin:1.8rem 0 .6rem
 article ul,article ol{margin:0 0 1.15rem;padding-left:1.2rem;}
 article li{margin-bottom:.4rem;color:var(--ink-2);}
 pre{
-  font-family:var(--mono);font-size:calc(.8125rem + 1pt);line-height:1.6;
+  font-family:var(--code);font-size:calc(.8125rem + 1pt);line-height:1.6;
   background:var(--paper-2);border:1px solid var(--rule-soft);border-left:2px solid var(--accent);
   padding:1rem 1.1rem;overflow-x:auto;margin:0 0 1.15rem;
 }
-code{font-family:var(--mono);font-size:calc(.9em + 0.1pt);}
+code{font-family:var(--code);font-size:calc(.9em + 0.1pt);}
 p code,li code,td code{background:var(--paper-2);padding:.08em .32em;border:1px solid var(--rule-soft);}
 pre code{background:none;padding:0;border:none;}
 figure{margin:1.8rem 0;}
 .fig-box{
   border:1px solid var(--rule);background:var(--paper-2);padding:1.1rem;
-  font-family:var(--mono);font-size:calc(.75rem + 1pt);color:var(--ink-2);line-height:1.7;overflow-x:auto;
+  font-family:var(--code);font-size:calc(.75rem + 1pt);color:var(--ink-2);line-height:1.7;overflow-x:auto;
 }
 figcaption{font-size:calc(.8125rem + 1pt);color:var(--ink-3);margin-top:.7rem;font-style:italic;max-width:none;}
 figcaption .lab{font-family:var(--mono);font-style:normal;color:var(--ink-2);margin-right:.4rem;}
@@ -379,7 +360,7 @@ footer{padding:3rem 0 4rem;}
   *{animation:none !important;transition:none !important;scroll-behavior:auto !important;}
 }
 
-/* Homelab overview and site-wide Cascadia Code typography. */
+/* Homelab overview and site-wide readable typography. */
 button,input,select,textarea{font-family:var(--mono);}
 .estate-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:2.5rem;margin-bottom:1.5rem;}
 .estate-summary{min-width:0;}
