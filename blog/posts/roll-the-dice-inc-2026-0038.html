@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Roll the Dice: INC-2026-0038 | purplepyram1d</title>
+<meta name="description" content="Working my first Roll the Dice round blind: a homelab fault injected by Claude Code, opened as an incident and assigned to me. One workstation cannot reach an internal web app, and the cause is a single outbound firewall rule.">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026090903">
+
+<link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/roll-the-dice-inc-2026-0038.html">
+
+<meta property="og:title" content="Roll the Dice: INC-2026-0038">
+<meta property="og:description" content="Working my first Roll the Dice round blind: a homelab fault injected by Claude Code, opened as an incident and assigned to me.">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-09-11</span>
+      <span class="em">DFIR</span>
+      <span>incident response</span>
+      <span>~6 min</span>
+    </div>
+
+    <article>
+      <h1>Roll the Dice: INC-2026-0038</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-09-11 &middot; incident response</div>
+
+      <p class="lede">I told Claude Code to cause a disruption or change of state somewhere in my homelab, then open an incident for it in my portal and assign it to me. The idea is that Claude plays a senior analyst: it nudges me toward the answer with questions instead of handing it over, and I work the ticket like it is real, without knowing what was done.</p>
+      <p>This is the first round. Here is the ticket that landed, and how I took it apart.</p>
+
+      <figure>
+        <img src="../../assets/images/rtd/01-INC.png" alt="The incident as it appeared in LabWatch, assigned to me.">
+        <figcaption><span class="lab">Fig 1.</span> The incident as it landed in LabWatch, assigned to me.</figcaption>
+      </figure>
+
+      <h3><strong>Initial alert</strong></h3>
+      <pre>Johnny - Eli Brooks in IT flagged this and I did a quick first look before handing it to you. An end user on WS02 says the internal web app at http://10.10.10.12:8080 (the FakeCorp intranet portal hosted on SRV01) just spins and times out from their machine. It started around 19:13 UTC today. What I already confirmed: WS02 is online and resolving names, it can ping SRV01 fine, and it still reaches other services on SRV01 - for example port 8090 answers - so both the workstation and the server are up. A second workstation, WS01, loads the same app on 8080 with no trouble. So it looks specific to WS02 reaching that one service. Can you work out why only WS02 times out to SRV01 on 8080, confirm the exact root cause, and get it working again? Note your evidence and steps as you go. Thanks.</pre>
+      <p>Reads like a real service ticket, and it is my first one as a SOC analyst.</p>
+
+      <h2><span class="n">1</span>Confirm the symptom myself</h2>
+      <p>The ticket already did some triage, but the first thing I want is to see the failure with my own eyes rather than take the reporter's word for it.</p>
+      <pre># On WS02
+Test-NetConnection -ComputerName 10.10.10.12 -Port 8080
+# TcpTestSucceeded : False   (but ping to 10.10.10.12 succeeds)</pre>
+      <figure>
+        <img src="../../assets/images/rtd/02-8080-Closed.png" alt="From WS02, the TCP test to SRV01 on 8080 fails while the ping succeeds.">
+        <figcaption><span class="lab">Fig 2.</span> From WS02, TCP 8080 to SRV01 fails, but ping succeeds. The host and the route are fine.</figcaption>
+      </figure>
+      <p>Sure enough, from the command line on WS02, port 8080 on SRV01 comes back <code>False</code>, but the ping succeeds. That split matters: a working ping tells me the host is up and the path is fine, so something is dropping this one TCP connection specifically. WS01 reaches the same app without trouble, so I am not going to go looking for the problem on SRV01 itself. Whatever this is, it is local to WS02.</p>
+
+      <h2><span class="n">2</span>Find what is dropping the traffic</h2>
+      <p>A single port failing to one destination, from one host, while ping and other ports work, points at something on WS02 that makes allow-or-deny decisions per destination and port. That is the host firewall. Rather than guess what a rule might be called, I list the rules by what I actually know: outbound, and blocking.</p>
+      <pre>Get-NetFirewallRule -Direction Outbound -Action Block -Enabled True</pre>
+      <figure>
+        <img src="../../assets/images/rtd/03-Firewall.png" alt="A single enabled outbound block rule on the workstation.">
+        <figcaption><span class="lab">Fig 3.</span> One enabled outbound block rule on a workstation, which has no business being there.</figcaption>
+      </figure>
+      <p>The name gives it away: <code>RTD-20260911-002-block-8080</code>. (I will be asking Claude to make these less obvious next time.) It looks like it blocks port 8080, but a name is just a label someone typed, so I want to confirm what the rule actually enforces rather than trust it.</p>
+      <pre>Get-NetFirewallPortFilter | Where-Object { $_.RemotePort -eq '8080' } | Format-List *</pre>
+      <figure>
+        <img src="../../assets/images/rtd/04-8080-Rule.png" alt="The rule's port filter shows RemotePort 8080.">
+        <figcaption><span class="lab">Fig 4.</span> The port condition: RemotePort 8080, protocol TCP.</figcaption>
+      </figure>
+      <p>There it is. Now the address it applies to:</p>
+      <pre>Get-NetFirewallAddressFilter | Where-Object { $_.RemoteAddress -eq '10.10.10.12' } | Format-List *</pre>
+      <figure>
+        <img src="../../assets/images/rtd/05-SRV01.png" alt="The rule's address filter shows RemoteAddress 10.10.10.12 with the same InstanceId.">
+        <figcaption><span class="lab">Fig 5.</span> The address condition: RemoteAddress 10.10.10.12, SRV01. Same InstanceId as the rule.</figcaption>
+      </figure>
+      <p>This confirms the rule applies specifically to SRV01 at <code>10.10.10.12</code>, and I can prove the port and the address belong to the <em>same</em> rule because both filters and the rule share one <code>InstanceId</code>, <code>F265693A-F85F-4588-9FB6-812E0D319E71</code>. That shared identifier is what turns "I found a suspicious rule" into "this exact rule blocks TCP 8080 to 10.10.10.12."</p>
+
+      <h2><span class="n">3</span>Establish when and how it was added</h2>
+      <p>Windows Firewall logs a rule addition as event 2097, so I can pull the who and when.</p>
+      <pre>Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Windows Firewall With Advanced Security/Firewall'; Id=2097; StartTime=(Get-Date).AddDays(-1)} | Format-List *</pre>
+      <pre>Message : A rule has been added to the Windows Defender Firewall exception list.
+
+Added Rule:
+Rule ID:               {F265693A-F85F-4588-9FB6-812E0D319E71}
+Rule Name:             RTD-20260911-002-block-8080
+Origin:                Local
+Active:                Yes
+Direction:             Outbound
+Profiles:              Private, Domain, Public
+Action:                Block
+Protocol:              TCP
+Modifying User:        S-1-5-21-953532086-3771123788-3498657558-500
+Modifying Application: C:\Windows\System32\netsh.exe
+TimeCreated:           9/11/2026 12:13:21 PM
+Id:                    2097
+MachineName:           WS02.corp.local</pre>
+      <p>There is that <code>InstanceId</code> again, <code>F265693A-F85F-4588-9FB6-812E0D319E71</code>. That is the smoking gun: the rule that is blocking the traffic is the same rule that was added at 12:13 today, by <code>netsh.exe</code>, under a well-known account. The <code>Modifying User</code> SID <code>S-1-5-21-...-500</code> ends in the relative identifier <code>500</code>, which is always the built-in <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/81d92bba-d22b-4a8c-908a-554ab29148ab">Administrator account</a>. Symptom, mechanism, and attribution all line up.</p>
+
+      <h2><span class="n">4</span>Fix it and verify</h2>
+      <p>With the evidence captured, I disable the rule.</p>
+      <pre>Disable-NetFirewallRule -DisplayName "RTD-20260911-002-block-8080"
+
+# Verify
+Get-NetFirewallRule -DisplayName "RTD-20260911-002-block-8080"</pre>
+      <figure>
+        <img src="../../assets/images/rtd/06-Verify.png" alt="The rule shows as disabled after remediation.">
+        <figcaption><span class="lab">Fig 6.</span> The rule, now disabled.</figcaption>
+      </figure>
+      <figure>
+        <img src="../../assets/images/rtd/06-Verify2.png" alt="WS02 reaches SRV01 on 8080 again after the rule is disabled.">
+        <figcaption><span class="lab">Fig 7.</span> WS02 reaches the app on 8080 again. Service restored.</figcaption>
+      </figure>
+      <p>I keep the rule around, disabled rather than deleted, so the evidence survives the fix, and I re-test the way I started: 8080 is reachable from WS02 again, the control port 8090 still answers, and WS01 was never affected. The fix is specific, and nothing else moved.</p>
+
+      <hr>
+
+      <p>Roll the Dice runs on a difficulty scale of one to ten. The dice landed on level five this round, and even so it went quickly once I stopped trusting the ticket's framing and confirmed each thing myself. Claude assures me the higher levels will not be so forgiving. LabWatch is fully live and now serves as my own SOC analyst training range, one incident at a time.</p>
+
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
