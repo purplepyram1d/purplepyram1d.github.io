@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>purplepyram1d | detection engineering notebook</title>
-<meta name="description" content="Johnny Meintel's detection engineering portfolio: an eleven-system homelab, reproducible security research, and documented defensive validation.">
+<title>purplepyram1d | Johnny Meintel</title>
+<meta name="description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="assets/images/logo-pyramid.png">
 <link rel="stylesheet" href="assets/css/site.css?v=2026090903">
-<meta property="og:title" content="purplepyram1d | detection engineering notebook">
-<meta property="og:description" content="An eleven-system homelab, reproducible security research, and documented defensive validation.">
+<meta property="og:title" content="purplepyram1d | Johnny Meintel">
+<meta property="og:description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta property="og:type" content="website">
 </head>
 <body>
@@ -20,7 +20,7 @@
     <div class="mast-row">
       <div>
         <h1 class="title">purplepyram<span class="dim">1</span>d</h1>
-        <p class="byline">Johnny Meintel · Detection Engineering</p>
+        <p class="byline">Johnny Meintel · IT Professional</p>
       </div>
       <nav class="mast-nav" aria-label="Primary">
         <a href="index.html" aria-current="page">Contents</a>
@@ -32,7 +32,7 @@
   </header>
 
   <div class="thesis">
-    <p>A working notebook on <strong>detection engineering</strong>. I build the attack in a homelab, then the detection that catches it, then write down what broke. Everything here is reproducible and the failures are included.</p>
+    <p>A portfolio dedicated to my cybersecurity journey.</p>
   </div>
 
   <main id="main">
@@ -46,7 +46,7 @@
 
     <div class="estate-overview">
       <div class="estate-summary">
-        <p class="estate-intro">A purpose-built enterprise and security lab running across three Windows hypervisors. The environment gives each detection a real identity, endpoint, service, collection, analytics, and adversary-emulation path.</p>
+        <p class="estate-intro">I built an enterprise network simulation containing an Active Directory domain, 2 Windows 11 endpoints, a web server and SQL database, a dual-SIEM hosting Splunk and Wazuh, as well as a Kali and Ubuntu C2 server for adversary emulation. I use this to construct realistic attack/defend scenarios and produce my own incident response documentation.</p>
         <a class="estate-walkthrough-link" href="blog/posts/homelab-walkthrough-9-8-26.html">Read the homelab walkthrough &rarr;</a>
       </div>
       <a class="estate-photo" href="blog/posts/homelab-walkthrough-9-8-26.html" aria-label="Read the homelab walkthrough">
@@ -141,6 +141,14 @@
     <div class="sec-head"><h2>Latest</h2><span class="count">2026-09</span></div>
 
       <div class="grid">
+        <div class="rail"><span>2026-09-11</span><span class="em">DFIR</span><span>~6 min</span></div>
+        <div class="entry">
+          <h3><a href="blog/posts/roll-the-dice-inc-2026-0038.html">Roll the Dice: INC-2026-0038</a></h3>
+          <p>The first round of a homelab exercise: Claude Code injects a real fault and files a ticket, and I work it blind as a live incident. One workstation cannot reach an internal web app while every other host and port is fine. The cause is a single outbound firewall rule, found by listing rules on what I knew instead of a guessed name and pinned to its port and address by a shared InstanceId.</p>
+        </div>
+      </div>
+
+      <div class="grid">
         <div class="rail"><span>2026-09-08</span><span class="em">Homelab</span><span>~47 min</span></div>
         <div class="entry">
           <h3><a href="blog/posts/homelab-walkthrough-9-8-26.html">Homelab Walkthrough</a></h3>
@@ -196,7 +204,7 @@
     <div class="grid">
       <div class="rail"><span>about</span></div>
       <div class="colophon">
-        <p>I design controlled attack paths, collect the resulting telemetry, build detections, and retain the failures that explain why a rule or pipeline changed.</p>
+        <p>I brought years of customer service experience to the help desk, and am now building the skills needed for my next role in cybersecurity.</p>
         <p class="fine">
           <a href="https://github.com/purplepyram1d">github</a> &middot;
           <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a>
