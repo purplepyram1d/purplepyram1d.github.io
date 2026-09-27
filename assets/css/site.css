@@ -99,8 +99,8 @@ img{max-width:100%;height:auto;}
 .title.sm{font-size:calc(1.25rem + 1pt);}
 .title .dim{color:var(--accent);font-weight:500;}
 .byline{
-  font-family:var(--sans);font-size:calc(.6875rem + 1pt);text-transform:uppercase;
-  letter-spacing:.16em;color:var(--accent);margin:.85rem 0 0;
+  font-family:var(--sans);font-size:calc(.875rem + 1pt);text-transform:uppercase;
+  letter-spacing:.1em;font-weight:650;color:var(--ink);margin:.85rem 0 0;
 }
 .mast-meta{
   font-family:var(--mono);font-size:calc(.6875rem + 1pt);color:var(--ink-3);
