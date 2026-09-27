@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Read-only snapshot of LabWatch, the incident queue in Johnny Meintel's home-lab SOC.">
+  <meta name="robots" content="noindex">
+  <title>LabWatch | snapshot | purplepyram1d</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="assets/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css?v=20260908-8">
+  <style>
+    /* Snapshot only: a thin banner and no write controls. */
+    .snapshot-banner{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;gap:.35rem 1rem;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:#111827;color:#e5e7eb;font:500 13px/1.4 Inter,system-ui,sans-serif}
+    .snapshot-banner a{color:#c4b5fd;text-decoration:none;font-weight:600;white-space:nowrap}
+    .snapshot-banner a:hover{text-decoration:underline}
+    #newIncident,#newKnowledge,#uploadEvidence,[data-incident-action="edit"],[data-incident-action="create-kb"],[data-incident-action="link-kb"],[data-kb-action="edit"],.source-link{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="snapshot-banner" role="note"><span><strong>Read-only snapshot</strong> of LabWatch, the incident queue in my home-lab SOC, taken 2026-09-27. Click an incident to see what the analyst sees.</span><a href="../index.html">&larr; Back to purplepyram1d</a></div>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <a class="brand" href="./" aria-label="LabWatch home">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div><strong>LabWatch</strong><small>FakeCorp Security Operations</small></div>
+      </a>
+      <nav id="primaryNav">
+        <button class="nav-item active" data-view="all"><span class="nav-icon">▦</span>All incidents<span class="nav-count" id="navAll">0</span></button>
+        <button class="nav-item" data-view="active"><span class="nav-icon">◉</span>Active queue<span class="nav-count" id="navActive">0</span></button>
+        <button class="nav-item" data-view="mine"><span class="nav-icon">◎</span>My incidents<span class="nav-count" id="navMine">0</span></button>
+        <button class="nav-item" data-view="resolved"><span class="nav-icon">✓</span>Resolved<span class="nav-count" id="navResolved">0</span></button>
+        <button class="nav-item" data-view="drafts"><span class="nav-icon">□</span>Drafts<span class="nav-count" id="navDrafts">0</span></button>
+      </nav>
+      <div class="sidebar-section">
+        <p>Workspace</p>
+        <button class="nav-item" data-view="knowledge"><span class="nav-icon">▤</span>Knowledge base<span class="nav-count" id="navKnowledge">1</span></button>
+        <button class="nav-item" data-view="metrics"><span class="nav-icon">⌁</span>Metrics</button>
+        <button class="nav-item" data-view="frameworks"><span class="nav-icon">◇</span>Framework coverage</button>
+      </div>
+      <div class="sidebar-foot">
+        <span class="privacy-dot"></span>
+        <div><strong>Public snapshot</strong><small>Live instance is private on SRV01</small></div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button>
+        <div class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <label class="sr-only" for="globalSearch">Search LabWatch</label>
+          <input id="globalSearch" type="search" placeholder="Search incidents">
+          <kbd>Ctrl K</kbd>
+        </div>
+        <div class="top-actions">
+          <span class="connection" id="connectionState"><i></i>Checking storage</span>
+          <button class="icon-button" id="exportAll" title="Export all incident records" aria-label="Export all incident records">⇩</button>
+          <div class="analyst"><span>JM</span><div><strong>Johnny Meintel</strong><small>SOC Analyst</small></div></div>
+        </div>
+      </header>
+
+      <main id="main">
+        <section class="page-heading">
+          <div><p class="eyebrow">Security operations</p><h1 id="pageTitle">Incident workspace</h1><p id="pageSubtitle">Track homelab incidents from intake through investigation, response, and validated closure.</p></div>
+          <button class="primary-button" id="newIncident"><span>+</span> New incident</button>
+        </section>
+
+        <section class="notice" aria-label="Data integrity notice">
+          <span>i</span>
+          <p><strong>Evidence-first workflow.</strong> Open a case when the issue is reported, while the lab is running, or after the work is complete. Save partial findings as the investigation develops, preserve uncertainty, and support closure with retained evidence.</p>
+        </section>
+
+        <section class="metric-grid" id="metricGrid" aria-label="Incident summary">
+          <article><div class="metric-label"><span class="metric-icon blue">◉</span>Active</div><strong id="metricActive">0</strong><small>requiring analyst action</small></article>
+          <article><div class="metric-label"><span class="metric-icon red">!</span>Critical</div><strong id="metricCritical">0</strong><small>open critical incidents</small></article>
+          <article><div class="metric-label"><span class="metric-icon amber">◷</span>Awaiting review</div><strong id="metricReview">0</strong><small>pending final validation</small></article>
+          <article><div class="metric-label"><span class="metric-icon green">✓</span>Resolved</div><strong id="metricResolved">0</strong><small>validated and closed</small></article>
+        </section>
+
+        <section class="queue-card" id="queueView">
+          <div class="queue-toolbar">
+            <div><h2>Incident queue</h2><p id="resultSummary">0 records</p></div>
+            <div class="filters">
+              <label><span>Severity</span><select id="severityFilter"><option value="all">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Informational</option></select></label>
+              <label><span>Status</span><select id="statusFilter"><option value="all">All statuses</option><option>Draft</option><option>New</option><option>In Progress</option><option>Contained</option><option>Monitoring</option><option>Resolved</option><option>Closed</option></select></label>
+              <label><span>Category</span><select id="categoryFilter"><option value="all">All categories</option></select></label>
+              <label><span>Affected host</span><select id="assetFilter"><option value="all">All hosts</option></select></label>
+              <label><span>Sort by</span><select id="queueSort">
+                <option value="opened_desc" selected>Opened (newest)</option><option value="opened_asc">Opened (oldest)</option>
+                <option value="updated_desc">Updated (newest)</option><option value="updated_asc">Updated (oldest)</option>
+                <option value="number_desc">Number (highest)</option><option value="number_asc">Number (lowest)</option>
+                <option value="status_asc">Status (workflow)</option><option value="status_desc">Status (reverse)</option>
+                <option value="severity_desc">Severity (highest)</option><option value="severity_asc">Severity (lowest)</option>
+                <option value="category_asc">Category (A-Z)</option><option value="category_desc">Category (Z-A)</option>
+                <option value="asset_asc">Affected host (A-Z)</option><option value="asset_desc">Affected host (Z-A)</option>
+              </select></label>
+              <button class="secondary-button query-toggle" id="toggleQueryBuilder" type="button" aria-expanded="false">Advanced query <span id="queryConditionCount">0</span></button>
+              <button class="secondary-button" id="clearFilters">Clear</button>
+            </div>
+          </div>
+          <section class="query-builder hidden" id="queryBuilder" aria-labelledby="queryBuilderTitle">
+            <div class="query-builder-heading"><div><p class="eyebrow">Condition builder</p><h3 id="queryBuilderTitle">Filter incident records</h3><p>Combine metadata and record content. AND conditions stay in a group; OR begins another matching group.</p></div><button class="secondary-button" id="addQueryCondition" type="button">+ Add condition</button></div>
+            <div class="query-rows" id="queryRows"></div>
+            <div class="query-builder-footer"><div class="query-expression" id="queryExpression">No advanced conditions applied.</div><div><button class="secondary-button" id="clearQuery" type="button">Clear query</button><button class="secondary-button" id="copyQuery" type="button">Copy query</button><button class="primary-button" id="applyQuery" type="button">Run query</button></div></div>
+          </section>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Number</th><th>Incident</th><th>Severity</th><th>Status</th><th>Category</th><th>Source</th><th>Asset</th><th>Opened</th><th>Updated</th></tr></thead>
+              <tbody id="incidentRows"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="emptyState">
+            <div class="empty-illustration"><span></span><span></span><span></span></div>
+            <h3>No incidents recorded</h3>
+            <p>Create a case from an alert, user report, observed change, or completed lab. Record only what is known and update it as the investigation develops.</p>
+            <button class="primary-button" id="emptyCreate">Create first incident</button>
+          </div>
+        </section>
+
+        <section class="analytics-view hidden" id="analyticsView" aria-live="polite"></section>
+
+        <section class="knowledge-view hidden" id="knowledgeView" aria-live="polite">
+          <div class="kb-toolbar">
+            <div><p class="eyebrow">Knowledge management</p><h2>Knowledge base</h2><p id="kbResultSummary">0 articles</p></div>
+            <div class="filters">
+              <label><span>Status</span><select id="kbStatusFilter"><option value="all">All statuses</option><option>Test</option><option>Draft</option><option>Published</option><option>Retired</option></select></label>
+              <label><span>Category</span><select id="kbCategoryFilter"><option value="all">All categories</option></select></label>
+              <button class="primary-button" id="newKnowledge"><span>+</span> New article</button>
+            </div>
+          </div>
+          <div class="kb-tag-filter hidden" id="kbTagFilter"></div>
+          <div class="kb-grid" id="knowledgeCards"></div>
+          <div class="empty-state hidden" id="kbEmptyState"><div class="empty-illustration"><span></span><span></span><span></span></div><h3>No knowledge articles match</h3><p>Adjust the knowledge filters or create an article from an established procedure.</p></div>
+        </section>
+
+        <article class="incident-record-view hidden" id="incidentRecordView" aria-live="polite"></article>
+
+        <article class="knowledge-article-view hidden" id="knowledgeArticleView" aria-live="polite"></article>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="editorBackdrop">
+    <section class="editor-modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <header><div><p class="eyebrow">Incident record</p><h2 id="editorTitle">New incident</h2></div><button class="close-button" data-close="editor" aria-label="Close editor">×</button></header>
+      <div class="editor-layout">
+        <nav class="form-nav" id="formNav" aria-label="Incident form sections">
+          <button class="active" data-form-section="identity"><span>01</span>Identification</button>
+          <button data-form-section="triage"><span>02</span>Triage</button>
+          <button data-form-section="frameworks"><span>03</span>Frameworks</button>
+          <button data-form-section="response"><span>04</span>Response</button>
+          <button data-form-section="evidence"><span>05</span>Evidence</button>
+          <button data-form-section="review"><span>06</span>Review</button>
+        </nav>
+        <form id="incidentForm" novalidate>
+          <input type="hidden" name="id">
+          <section class="form-section active" data-section="identity">
+            <div class="section-intro"><h3>Identification</h3><p>Record the issue as it arrived. Unknown details can be added as the investigation develops.</p></div>
+            <div class="field full"><label for="title">Short description <em>required</em></label><input id="title" name="title" required maxlength="140" placeholder="Observed incident title"></div>
+            <div class="form-grid three">
+              <div class="field"><label for="severity">Severity <em>required</em></label><select id="severity" name="severity" required><option value="">Select</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Informational</option></select></div>
+              <div class="field"><label for="status">Status</label><select id="status" name="status"><option>Draft</option><option>New</option><option>In Progress</option><option>Contained</option><option>Monitoring</option><option>Resolved</option><option>Closed</option></select></div>
+              <div class="field"><label for="classification">Classification</label><select id="classification" name="classification"><option>Unclassified</option><option>True Positive</option><option>Benign True Positive</option><option>False Positive</option><option>Expected Test Activity</option></select></div>
+            </div>
+            <div class="form-grid three">
+              <div class="field"><label for="category">Category</label><select id="category" name="category"><option>Uncategorized</option><option>Endpoint</option><option>Identity and access</option><option>Network</option><option>Malware</option><option>Data security</option><option>Vulnerability</option><option>Policy and control</option><option>Availability</option><option>Threat hunting</option><option>Other</option></select></div>
+              <div class="field"><label for="subcategory">Subcategory</label><select id="subcategory" name="subcategory"><option>Unspecified</option><option>Execution</option><option>Persistence</option><option>Privilege escalation</option><option>Defense evasion</option><option>Credential access</option><option>Discovery</option><option>Lateral movement</option><option>Collection</option><option>Command and control</option><option>Exfiltration</option><option>Impact</option><option>Authentication</option><option>Configuration</option><option>Detection validation</option><option>Other</option></select></div>
+              <div class="field"><label for="environment">Environment</label><select id="environment" name="environment"><option>Homelab</option><option>Endpoint lab</option><option>Network lab</option><option>Identity lab</option><option>Cloud lab</option><option>Corporate simulation</option><option>Other</option></select></div>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label for="labRunId">Lab run ID <em>closure required</em></label><input id="labRunId" name="labRunId" placeholder="Exact retained run identifier, when available"></div>
+              <div class="field"><label for="alertSource">Alert source <em>required</em></label><input id="alertSource" name="alertSource" required list="alertSourceOptions" placeholder="Wazuh, Splunk, Defender, analyst observation"><datalist id="alertSourceOptions"><option value="Wazuh"><option value="Splunk"><option value="Microsoft Defender"><option value="Sysmon"><option value="Windows Event Log"><option value="Suricata"><option value="Velociraptor"><option value="Analyst observation"></datalist></div>
+              <div class="field"><label for="openedAt">Detection time, UTC</label><input id="openedAt" name="openedAt" type="datetime-local"></div>
+              <div class="field"><label for="assignedTo">Assigned analyst</label><input id="assignedTo" name="assignedTo" value="Johnny Meintel"></div>
+              <div class="field"><label for="assignedToRole">Assigned analyst role</label><select id="assignedToRole" name="assignedToRole"><option value="">Not recorded</option><option>SOC Analyst I</option><option>SOC Analyst II</option><option>Senior SOC Analyst</option><option>Detection Engineer</option><option>Incident Responder</option><option>Threat Hunter</option></select></div>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label for="detectionMethod">Detection method</label><select id="detectionMethod" name="detectionMethod"><option>Analyst-created</option><option>SIEM alert</option><option>Threat hunt</option><option>User report</option><option>Control validation</option><option>Automated response</option><option>Manual observation</option><option>Other</option></select></div>
+              <div class="field"><label for="assignmentGroup">Assignment group</label><select id="assignmentGroup" name="assignmentGroup"><option>SOC Operations</option><option>Detection Engineering</option><option>Incident Response</option><option>Threat Hunting</option><option>Homelab Operations</option><option>Unassigned</option></select></div>
+            </div>
+            <div class="form-grid three">
+              <div class="field"><label for="callerName">Caller</label><input id="callerName" name="callerName" placeholder="Person reporting the issue"></div>
+              <div class="field"><label for="callerRole">Caller role</label><select id="callerRole" name="callerRole"><option value="">Not recorded</option><option>SOC Analyst I</option><option>IT Support Specialist I</option><option>Finance</option><option>Human Resources</option><option>Employee</option><option>System or integration</option><option>Other</option></select></div>
+              <div class="field"><label for="requestChannel">Request channel</label><select id="requestChannel" name="requestChannel"><option>Self-service portal</option><option>Monitoring integration</option><option>Email</option><option>Chat</option><option>Phone</option><option>Walk-up</option><option>Analyst observation</option><option>Other</option></select></div>
+            </div>
+            <p class="field-note">LabWatch captures the authenticated submitting account separately from the caller persona so the audit trail remains accurate.</p>
+            <div class="field full"><label for="initialAlert">Initial alert and trigger <em>required</em></label><textarea id="initialAlert" name="initialAlert" required rows="5" placeholder="Record the exact observed alert, rule, query, or analyst trigger. Do not infer intent here."></textarea></div>
+          </section>
+
+          <section class="form-section" data-section="triage">
+            <div class="section-intro"><h3>Triage and scope</h3><p>Separate observable facts from analyst assessment.</p></div>
+            <div class="form-grid three"><div class="field"><label for="primaryAsset">Affected host or asset</label><input id="primaryAsset" name="primaryAsset" list="assetOptions" placeholder="Host or service"><datalist id="assetOptions"></datalist></div><div class="field"><label for="affectedUser">Affected identity</label><input id="affectedUser" name="affectedUser" list="identityOptions" placeholder="User or service account"><datalist id="identityOptions"></datalist></div><div class="field"><label for="sourceAddress">Source address</label><input id="sourceAddress" name="sourceAddress" list="sourceAddressOptions" placeholder="IP or origin"><datalist id="sourceAddressOptions"></datalist></div></div>
+            <div class="field full"><label for="observedFacts">Observed facts <em>closure required</em></label><textarea id="observedFacts" name="observedFacts" rows="7" placeholder="Add one confirmed fact per line as evidence becomes available. Include timestamps, event IDs, process relationships, network observations, and control results."></textarea></div>
+            <div class="field full"><label for="scope">Scope determination</label><textarea id="scope" name="scope" rows="5" placeholder="Systems, identities, time window, and evidence used to establish or limit scope."></textarea></div>
+            <div class="field full"><label for="attribution">Attribution assessment</label><textarea id="attribution" name="attribution" rows="5" placeholder="State what can be attributed, confidence level, supporting evidence, alternatives, and what remains unknown."></textarea></div>
+            <div class="field full"><label for="impact">Impact assessment</label><textarea id="impact" name="impact" rows="4" placeholder="Observed effect on confidentiality, integrity, availability, operations, or control coverage."></textarea></div>
+          </section>
+
+          <section class="form-section" data-section="frameworks">
+            <div class="section-intro"><h3>Framework mapping</h3><p>Map only behaviors demonstrated by retained evidence.</p></div>
+            <div class="field full"><label for="mitreTechniqueSearch">MITRE ATT&amp;CK mappings</label><div class="mitre-combobox"><input id="mitreTechniqueSearch" list="attackTechniqueOptions" autocomplete="off" placeholder="Type an ID or technique name"><datalist id="attackTechniqueOptions"></datalist><button class="secondary-button" id="addMitreTechnique" type="button">Add technique</button></div><div class="mitre-chip-list editor" id="mitreTechniqueChips"><p class="mitre-empty">No techniques mapped.</p></div><small>Techniques are validated against the pinned Enterprise ATT&amp;CK catalog. Rule suggestions remain unconfirmed until you explicitly confirm them against evidence.</small></div>
+            <div class="field full"><label for="nistCategorySelect">NIST CSF 2.0 mappings</label><div class="nist-picker"><select id="nistFunctionFilter" aria-label="Filter NIST categories by function"><option value="all">All functions</option></select><select id="nistCategorySelect" aria-label="NIST CSF category"><option value="">Select a category</option></select><button class="secondary-button" id="addNistMapping" type="button">Add category</button></div><div class="nist-mapping-list editor" id="nistMappingChips"><p class="nist-empty">No NIST CSF categories mapped.</p></div><small>Select only categories supported by the incident record. Mappings are grouped by Govern, Identify, Protect, Detect, Respond, and Recover.</small></div>
+            <div class="form-grid"><div class="field"><label for="confidence">Analytic confidence</label><select id="confidence" name="confidence"><option>Not assessed</option><option>Low</option><option>Moderate</option><option>High</option></select></div><div class="field"><label for="priorityRationale">Priority rationale</label><input id="priorityRationale" name="priorityRationale" placeholder="Why this case receives this priority"></div></div>
+          </section>
+
+          <section class="form-section" data-section="response">
+            <div class="section-intro"><h3>Response actions</h3><p>Record decisions, actions, owners, and validation rather than a generic checklist.</p></div>
+            <div class="field full"><label for="timeline">Incident timeline</label><textarea id="timeline" name="timeline" rows="9" placeholder="UTC timestamp | Actor | Action or observation | Result"></textarea></div>
+            <div class="field full"><label for="containment">Containment</label><textarea id="containment" name="containment" rows="5" placeholder="Action taken, reason, affected scope, owner, and immediate validation."></textarea></div>
+            <div class="field full"><label for="eradication">Eradication</label><textarea id="eradication" name="eradication" rows="5" placeholder="Persistence, account, configuration, or artifact changes and evidence of completion."></textarea></div>
+            <div class="field full"><label for="recovery">Recovery and monitoring</label><textarea id="recovery" name="recovery" rows="5" placeholder="Service restoration, negative controls, monitoring window, and exit criteria."></textarea></div>
+          </section>
+
+          <section class="form-section" data-section="evidence">
+            <div class="section-intro"><h3>Evidence and analysis</h3><p>Reference retained artifacts. Do not paste secrets or sensitive payloads into the portal.</p></div>
+            <div class="field full"><label for="evidence">Evidence inventory <em>closure required</em></label><textarea id="evidence" name="evidence" rows="9" placeholder="Artifact type | Source system | Retained path or hash | What it proves"></textarea></div>
+            <section class="evidence-upload-panel" id="evidenceUploadPanel" aria-labelledby="evidenceUploadTitle">
+              <div class="evidence-upload-heading"><div><h4 id="evidenceUploadTitle">Evidence packages</h4><p>Attach the retained files for this incident. Packages are stored outside the web root and receive a SHA-256 upload fingerprint.</p></div><span class="evidence-limit">512 MiB per file</span></div>
+              <div class="evidence-upload-controls"><input id="evidenceFiles" type="file" multiple accept=".zip,.7z,.tar,.gz,.tgz,.evtx,.pcap,.pcapng,.json,.xml,.csv,.txt,.log,.md,.pdf,.png,.jpg,.jpeg,.webp"><button class="secondary-button" id="uploadEvidence" type="button">Upload selected files</button></div>
+              <p class="evidence-upload-note" id="evidenceUploadNote" role="status" aria-live="polite">Choose files, then save the incident to attach them.</p>
+              <div class="evidence-file-list" id="evidenceEditorFiles"></div>
+            </section>
+            <div class="field full"><label for="queries">Queries and commands</label><textarea id="queries" name="queries" rows="8" placeholder="Tool | Exact query or command | Purpose | Result"></textarea></div>
+            <div class="field full"><label for="detection">Detection assessment</label><textarea id="detection" name="detection" rows="6" placeholder="What fired, what did not, false-positive controls, coverage gaps, and tuning decision."></textarea></div>
+          </section>
+
+          <section class="form-section" data-section="review">
+            <div class="section-intro"><h3>Review and closure</h3><p>Close the case only when the conclusion and recovery are reproducible from the record.</p></div>
+            <div class="field full"><label for="conclusion">Final determination <em>closure required</em></label><textarea id="conclusion" name="conclusion" rows="6" placeholder="State what happened, how you know, impact, and remaining uncertainty."></textarea></div>
+            <div class="field full"><label for="validation">Validation performed</label><textarea id="validation" name="validation" rows="6" placeholder="Positive and negative controls used to verify containment, recovery, and detection behavior."></textarea></div>
+            <div class="field full"><label for="lessons">Lessons learned and follow-up</label><textarea id="lessons" name="lessons" rows="6" placeholder="Detection changes, hardening, documentation, ownership, due date, and residual risk."></textarea></div>
+            <div class="form-grid"><div class="field"><label for="reviewedBy">Reviewed by</label><input id="reviewedBy" name="reviewedBy" placeholder="Reviewer or self-review marker"></div><div class="field"><label for="closedAt">Closure time, UTC</label><input id="closedAt" name="closedAt" type="datetime-local"></div></div>
+            <div class="field full"><label>Linked knowledge articles</label><div class="relation-picker" id="kbLinkPicker"><p>No knowledge articles available.</p></div><small>Select every KB consulted or created during the investigation.</small></div>
+            <label class="integrity-check"><input type="checkbox" id="integrityConfirm" name="integrityConfirm"><span>I confirm this record is ready for resolved or closed status, contains no invented observations, and is supported by retained evidence.</span></label>
+          </section>
+          <footer class="form-footer"><span id="formStatus">Draft and active cases can be saved with intake facts. Complete the evidence record and attestation before closure.</span><div><button type="button" class="secondary-button" data-close="editor">Cancel</button><button type="submit" class="primary-button">Save incident</button></div></footer>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop hidden" id="kbEditorBackdrop">
+    <section class="kb-editor-modal" role="dialog" aria-modal="true" aria-labelledby="kbEditorTitle">
+      <header><div><p class="eyebrow">Knowledge article</p><h2 id="kbEditorTitle">New article</h2></div><button class="close-button" data-close="kb-editor" aria-label="Close knowledge editor">×</button></header>
+      <form id="knowledgeForm" novalidate>
+        <input type="hidden" name="id">
+        <div class="kb-form-body">
+          <section class="form-block"><h3>Article identity</h3><div class="field full"><label for="kbTitle">Title <em>required</em></label><input id="kbTitle" name="title" required maxlength="160" placeholder="Clear task or reference title"></div>
+            <div class="form-grid three"><div class="field"><label for="kbStatus">Status <em>required</em></label><select id="kbStatus" name="status"><option>Draft</option><option>Test</option><option>Published</option><option>Retired</option></select></div><div class="field"><label for="kbType">Article type</label><select id="kbType" name="articleType"><option>Procedure</option><option>Reference</option><option>Playbook</option><option>Troubleshooting</option><option>Detection Guide</option></select></div><div class="field"><label for="kbCategory">Category <em>required</em></label><input id="kbCategory" name="category" required placeholder="Authentication, endpoint, LabWatch Operations"></div></div>
+            <div class="form-grid"><div class="field"><label for="kbAudience">Audience</label><input id="kbAudience" name="audience" placeholder="SOC analysts"></div><div class="field"><label for="kbAuthor">Author</label><input id="kbAuthor" name="author" value="Johnny Meintel"></div></div>
+            <div class="field full"><label for="kbSummary">Summary <em>required</em></label><textarea id="kbSummary" name="summary" required rows="4" placeholder="What this article helps an analyst accomplish"></textarea></div></section>
+          <section class="form-block"><h3>Procedure and decisions</h3><div class="field full"><label for="kbPurpose">Purpose and scope</label><textarea id="kbPurpose" name="purpose" rows="4" placeholder="Use cases, exclusions, and operating boundary"></textarea></div><div class="field full"><label for="kbPrerequisites">Prerequisites</label><textarea id="kbPrerequisites" name="prerequisites" rows="4" placeholder="Access, evidence, tools, approvals, and starting state"></textarea></div><div class="field full"><label for="kbContent">Article body <em>required</em></label><textarea id="kbContent" name="content" required rows="12" placeholder="Numbered procedure, decision points, expected results, and rollback steps"></textarea></div></section>
+          <section class="form-block"><h3>Validation and relationships</h3><div class="field full"><label for="kbValidation">Validation</label><textarea id="kbValidation" name="validation" rows="5" placeholder="Success conditions, negative controls, and evidence of completion"></textarea></div><div class="field full"><label for="kbEscalation">Escalation and exceptions</label><textarea id="kbEscalation" name="escalation" rows="4" placeholder="Stop conditions, handoff criteria, and unresolved cases"></textarea></div><div class="form-grid"><div class="field"><label for="kbMitre">MITRE ATT&amp;CK references</label><textarea id="kbMitre" name="mitre" rows="5" placeholder="Only when the article covers evidenced adversary behavior"></textarea></div><div class="field"><label for="kbNist">NIST references</label><textarea id="kbNist" name="nist" rows="5" placeholder="Applicable response functions or phases"></textarea></div></div><div class="field full"><label for="kbTags">Tags</label><input id="kbTags" name="tags" placeholder="comma, separated, tags"></div><div class="field full"><label>Linked incidents</label><div class="relation-picker" id="incidentLinkPicker"><p>No incidents available.</p></div><small>Link only incidents that used or materially relate to this article.</small></div><div class="form-grid"><div class="field"><label for="kbReviewedBy">Reviewed by</label><input id="kbReviewedBy" name="reviewedBy"></div><div class="field"><label for="kbReviewDate">Review date</label><input id="kbReviewDate" name="reviewDate" type="date"></div></div></section>
+        </div>
+        <footer class="form-footer"><span id="kbFormStatus">Required fields preserve article quality.</span><div><button type="button" class="secondary-button" data-close="kb-editor">Cancel</button><button type="submit" class="primary-button">Save article</button></div></footer>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  <script src="assets/snapshot.js?v=20260927"></script>
+  <script src="assets/app.js?v=20260927-snapshot" defer></script>
+</body>
+</html>

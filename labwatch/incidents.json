@@ -1,0 +1,409 @@
+{
+ "records": [
+  {
+   "sourceSystem": "Wazuh",
+   "sourceRule": "92057",
+   "sourceEventId": "1ef0fb25b8990c6aded7e0f8654f7b88c8de187695fd622a7f2e902b2e40626f",
+   "correlationKey": "Wazuh|92057|WS02",
+   "title": "Powershell.exe spawned a powershell process which executed a base64 encoded command",
+   "severity": "High",
+   "alertSource": "Wazuh rule 92057 (via Splunk)",
+   "openedAt": "2026-09-27T04:30:37Z",
+   "primaryAsset": "WS02",
+   "affectedUser": "Null",
+   "sourceAddress": "10.10.10.22",
+   "initialAlert": "rule=92057; level=12; agent=WS02; eventRecordID=97290; image=C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe; parentImage=Null; sourceIp=10.10.10.22; user=Null",
+   "mitreTechniques": [],
+   "attackVersion": "19.2",
+   "assignedTo": "Johnny Meintel",
+   "id": "INC-2026-0093",
+   "status": "New",
+   "classification": "Unclassified",
+   "category": "Uncategorized",
+   "subcategory": "Unspecified",
+   "environment": "Homelab",
+   "detectionMethod": "SIEM alert",
+   "assignmentGroup": "SOC Operations",
+   "callerName": "Monitoring integration",
+   "callerRole": "System or integration",
+   "requestChannel": "Monitoring integration",
+   "submittedBy": "labwatch-ingest",
+   "origin": "auto-ingest",
+   "integrityConfirmed": false,
+   "sourceEventCount": 6,
+   "relatedEvents": [
+    "db14154655bfa77c9d3c05814b92986de4f8dd62677106318e25d379e379982e",
+    "7e783fe1f9e7fd22ca811cb6c5e984190da96d1e49e95c7306cd9b19b81aea18",
+    "8fe602475665b2790a030f25d8d86f239bd2fc19ea17f96650bd5c8fffed39b9",
+    "e7abc994e881c47b6080c41c787bd9fe14ddd34c3e14f758110da9c072525000",
+    "a710c1de18647bdc3c80ca0293790ae2a1af7caeebab05e42bb760da2959692e"
+   ],
+   "sourceLastEventAt": "2026-09-27T21:16:38Z",
+   "createdAt": "2026-09-27T04:31:24+00:00",
+   "updatedAt": "2026-09-27T21:17:23+00:00",
+   "ingestedAt": "2026-09-27T04:31:24+00:00",
+   "history": [
+    {
+     "at": "2026-09-27T04:31:24+00:00",
+     "actor": "labwatch-ingest",
+     "action": "ingested",
+     "changedFields": [
+      "sourceSystem",
+      "sourceRule",
+      "sourceEventId",
+      "correlationKey",
+      "title",
+      "severity",
+      "alertSource",
+      "openedAt",
+      "primaryAsset",
+      "affectedUser",
+      "sourceAddress",
+      "initialAlert",
+      "mitreTechniques",
+      "attackVersion",
+      "assignedTo"
+     ]
+    },
+    {
+     "at": "2026-09-27T20:37:24+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T20:38:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T20:47:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:05:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:17:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    }
+   ],
+   "recordHash": "713d347cfe913db698b95e93e8e0d20d964c069265ba222bd6d9e183ccc40f83"
+  },
+  {
+   "sourceSystem": "Wazuh",
+   "sourceRule": "92057",
+   "sourceEventId": "3c35f6cbd73803a7231df5580acb4293345ca5777bd0d6dd60e2fd7da54758bc",
+   "correlationKey": "Wazuh|92057|WS01",
+   "title": "Powershell.exe spawned a powershell process which executed a base64 encoded command",
+   "severity": "High",
+   "alertSource": "Wazuh rule 92057 (via Splunk)",
+   "openedAt": "2026-09-27T04:30:41Z",
+   "primaryAsset": "WS01",
+   "affectedUser": "Null",
+   "sourceAddress": "10.10.10.21",
+   "initialAlert": "rule=92057; level=12; agent=WS01; eventRecordID=8261; image=C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe; parentImage=Null; sourceIp=10.10.10.21; user=Null",
+   "mitreTechniques": [],
+   "attackVersion": "19.2",
+   "assignedTo": "Johnny Meintel",
+   "id": "INC-2026-0094",
+   "status": "New",
+   "classification": "Unclassified",
+   "category": "Uncategorized",
+   "subcategory": "Unspecified",
+   "environment": "Homelab",
+   "detectionMethod": "SIEM alert",
+   "assignmentGroup": "SOC Operations",
+   "callerName": "Monitoring integration",
+   "callerRole": "System or integration",
+   "requestChannel": "Monitoring integration",
+   "submittedBy": "labwatch-ingest",
+   "origin": "auto-ingest",
+   "integrityConfirmed": false,
+   "sourceEventCount": 5,
+   "relatedEvents": [
+    "52a77bc5502ece023ef2539309d3e73ccaac27b85de788bd1c5998dc8cc22cab",
+    "1b0a2f1d7bc702239155f26fca1ac0e776821941f028549d7b36e45a992ef42f",
+    "0c3835993cb5389ca37b8f8cf3cdbbc2baf3b06bcc795402785944b757ce0003",
+    "58d4c8500aa9f32800e9fc037b0415f165a54ba174c4d760469d36207e5f3bcf"
+   ],
+   "sourceLastEventAt": "2026-09-27T21:16:35Z",
+   "createdAt": "2026-09-27T04:31:24+00:00",
+   "updatedAt": "2026-09-27T21:17:23+00:00",
+   "ingestedAt": "2026-09-27T04:31:24+00:00",
+   "history": [
+    {
+     "at": "2026-09-27T04:31:24+00:00",
+     "actor": "labwatch-ingest",
+     "action": "ingested",
+     "changedFields": [
+      "sourceSystem",
+      "sourceRule",
+      "sourceEventId",
+      "correlationKey",
+      "title",
+      "severity",
+      "alertSource",
+      "openedAt",
+      "primaryAsset",
+      "affectedUser",
+      "sourceAddress",
+      "initialAlert",
+      "mitreTechniques",
+      "attackVersion",
+      "assignedTo"
+     ]
+    },
+    {
+     "at": "2026-09-27T20:37:24+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T20:47:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:05:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:17:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    }
+   ],
+   "recordHash": "9fd44abc218b3f8821569bc8de1cc7556ec36a62ed33434132bdc8559efad101"
+  },
+  {
+   "sourceSystem": "Wazuh",
+   "sourceRule": "92203",
+   "sourceEventId": "72e1f1d8ecdd24b573c4cf44a7bfcb42ac28b20dfbcce5fd9b7d62e12f056413",
+   "correlationKey": "Wazuh|92203|SRV01",
+   "title": "Executable file created by powershell: C:\\\\ProgramData\\\\CorpDocumentsBackups\\\\accepted-20260927-140620\\\\data\\\\Worker\\\\Backup-Verify.ps1",
+   "severity": "Medium",
+   "alertSource": "Wazuh rule 92203 (via Splunk)",
+   "openedAt": "2026-09-27T21:06:25Z",
+   "primaryAsset": "SRV01",
+   "affectedUser": "CORP\\\\Administrator",
+   "sourceAddress": "10.10.10.12",
+   "initialAlert": "rule=92203; level=6; agent=SRV01; eventRecordID=117019; image=C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe; parentImage=Null; sourceIp=10.10.10.12; user=CORP\\\\Administrator",
+   "mitreTechniques": [],
+   "attackVersion": "19.2",
+   "assignedTo": "Johnny Meintel",
+   "id": "INC-2026-0095",
+   "status": "New",
+   "classification": "Unclassified",
+   "category": "Uncategorized",
+   "subcategory": "Unspecified",
+   "environment": "Homelab",
+   "detectionMethod": "SIEM alert",
+   "assignmentGroup": "SOC Operations",
+   "callerName": "Monitoring integration",
+   "callerRole": "System or integration",
+   "requestChannel": "Monitoring integration",
+   "submittedBy": "labwatch-ingest",
+   "origin": "auto-ingest",
+   "integrityConfirmed": false,
+   "sourceEventCount": 10,
+   "relatedEvents": [
+    "90887c7314996c2da39357e94760dfd801341e87cbca2303004757d7ac4bf59c",
+    "867f50b4cea94ed1dd70ff1efb9a141aa38718b7241e81af42bee2dd73cc4a8b",
+    "658aebc99e71e1e6d1a38afbe9606ea61d0c740d1a42fd855e9d22eb13636ef8",
+    "b6b3ecbff19caeeb3ff37ed74948c40e3d524a554f2bf914fe4d86d5c81a6696",
+    "98ef14c238273ee873b1a2e40d19f9274836a226d0c0e30a8d1fde5831d8cdc5",
+    "c0fe9dc81836a54e52f36cc5d7c30998e305604238d91b06c1d16bea7cf19102",
+    "d8d0d1f01c781226b7fa67303512c1154515dd42c73b25a37170e1dfa9ec5a19",
+    "16e8ae8ee3cdf137122cb5697e555509bfdb7a01cccd6b4fe577eb3b3806d7f5",
+    "0ccaf4c4b1d4194d95ba869e7e0085419593d516326f6ca59dec34c2b8c58e3d"
+   ],
+   "sourceLastEventAt": "2026-09-27T21:06:26Z",
+   "createdAt": "2026-09-27T21:07:23+00:00",
+   "updatedAt": "2026-09-27T21:07:23+00:00",
+   "ingestedAt": "2026-09-27T21:07:23+00:00",
+   "history": [
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "ingested",
+     "changedFields": [
+      "sourceSystem",
+      "sourceRule",
+      "sourceEventId",
+      "correlationKey",
+      "title",
+      "severity",
+      "alertSource",
+      "openedAt",
+      "primaryAsset",
+      "affectedUser",
+      "sourceAddress",
+      "initialAlert",
+      "mitreTechniques",
+      "attackVersion",
+      "assignedTo"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    },
+    {
+     "at": "2026-09-27T21:07:23+00:00",
+     "actor": "labwatch-ingest",
+     "action": "recurrence",
+     "changedFields": [
+      "sourceEventCount",
+      "relatedEvents",
+      "sourceLastEventAt",
+      "severity"
+     ]
+    }
+   ],
+   "recordHash": "567c9416660d0ddf83834f1378e3991fddaa3ac63b7304fd8bb6b56c97e91bc6"
+  }
+ ]
+}

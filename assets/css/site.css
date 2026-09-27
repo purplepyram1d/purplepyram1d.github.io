@@ -134,6 +134,8 @@ img{max-width:100%;height:auto;}
 .lab-status p{margin:0 0 .5rem;font-size:calc(.9375rem + 1pt);line-height:1.55;color:var(--ink);}
 .lab-status ul{margin:0;padding-left:1.1rem;font-size:calc(.8125rem + 1pt);line-height:1.55;color:var(--ink-2);}
 .lab-status li{margin:.15rem 0;}
+.lab-status .status-queue{display:inline-block;margin-top:.7rem;font-family:var(--sans);font-size:calc(.8125rem + 1pt);font-weight:600;color:var(--ink);border-bottom:1px solid var(--accent);}
+.lab-status .status-queue:hover{color:var(--accent);}
 
 /* ---------- sections ---------- */
 section{margin-bottom:3.5rem;}

@@ -1,0 +1,35 @@
+// Read-only snapshot shim for the public copy of LabWatch.
+// The real LabWatch runs privately on SRV01 behind Windows sign-in and talks to api.php.
+// Here, the three read calls are answered from static files and every write is refused,
+// so the interface is the real one but nothing can be changed.
+(function () {
+  const realFetch = window.fetch.bind(window);
+  const json = (body, status = 200) => new Response(JSON.stringify(body), {
+    status, headers: { 'Content-Type': 'application/json' },
+  });
+  const refuse = () => json({ error: 'This is a read-only snapshot of LabWatch. Changes are made in the private instance.' }, 403);
+
+  window.fetch = async function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (!url.includes('api.php')) return realFetch(input, init);
+    const method = ((init && init.method) || 'GET').toUpperCase();
+    const action = new URL(url, window.location.href).searchParams.get('action');
+    if (method !== 'GET') return refuse();
+    if (action === 'list') return realFetch('incidents.json', { cache: 'no-store' });
+    if (action === 'kb-list') return json({ records: [] });
+    if (action === 'framework-catalogs') {
+      const [attack, nist] = await Promise.all([
+        realFetch('assets/attack-techniques.json').then((r) => r.json()),
+        realFetch('assets/nist-csf-2.json').then((r) => r.json()),
+      ]);
+      return json({ attack, nist });
+    }
+    return refuse();
+  };
+
+  // Keep the snapshot from reading or writing anything a visitor's browser may have stored.
+  try {
+    localStorage.removeItem('labwatch-records-v1');
+    localStorage.removeItem('labwatch-knowledge-v1');
+  } catch (e) { /* storage unavailable: nothing to clear */ }
+})();

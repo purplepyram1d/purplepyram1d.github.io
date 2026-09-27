@@ -1,0 +1,38 @@
+{
+  "source": "NIST Cybersecurity Framework 2.0",
+  "sourceUrl": "https://doi.org/10.6028/NIST.CSWP.29",
+  "version": "2.0",
+  "functionOrder": ["GV", "ID", "PR", "DE", "RS", "RC"],
+  "functions": {
+    "GV": "Govern",
+    "ID": "Identify",
+    "PR": "Protect",
+    "DE": "Detect",
+    "RS": "Respond",
+    "RC": "Recover"
+  },
+  "categories": [
+    {"id": "GV.OC", "name": "Organizational Context", "function": "GV"},
+    {"id": "GV.RM", "name": "Risk Management Strategy", "function": "GV"},
+    {"id": "GV.RR", "name": "Roles, Responsibilities, and Authorities", "function": "GV"},
+    {"id": "GV.PO", "name": "Policy", "function": "GV"},
+    {"id": "GV.OV", "name": "Oversight", "function": "GV"},
+    {"id": "GV.SC", "name": "Cybersecurity Supply Chain Risk Management", "function": "GV"},
+    {"id": "ID.AM", "name": "Asset Management", "function": "ID"},
+    {"id": "ID.RA", "name": "Risk Assessment", "function": "ID"},
+    {"id": "ID.IM", "name": "Improvement", "function": "ID"},
+    {"id": "PR.AA", "name": "Identity Management, Authentication, and Access Control", "function": "PR"},
+    {"id": "PR.AT", "name": "Awareness and Training", "function": "PR"},
+    {"id": "PR.DS", "name": "Data Security", "function": "PR"},
+    {"id": "PR.PS", "name": "Platform Security", "function": "PR"},
+    {"id": "PR.IR", "name": "Technology Infrastructure Resilience", "function": "PR"},
+    {"id": "DE.CM", "name": "Continuous Monitoring", "function": "DE"},
+    {"id": "DE.AE", "name": "Adverse Event Analysis", "function": "DE"},
+    {"id": "RS.MA", "name": "Incident Management", "function": "RS"},
+    {"id": "RS.AN", "name": "Incident Analysis", "function": "RS"},
+    {"id": "RS.CO", "name": "Incident Response Reporting and Communication", "function": "RS"},
+    {"id": "RS.MI", "name": "Incident Mitigation", "function": "RS"},
+    {"id": "RC.RP", "name": "Incident Recovery Plan Execution", "function": "RC"},
+    {"id": "RC.CO", "name": "Incident Recovery Communication", "function": "RC"}
+  ]
+}
