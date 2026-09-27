@@ -7,10 +7,13 @@
 <meta name="description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="assets/css/site.css?v=2026090903">
+<link rel="stylesheet" href="assets/css/site.css?v=2026092701">
 <meta property="og:title" content="purplepyram1d | Johnny Meintel">
 <meta property="og:description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://purplepyram1d.github.io/">
+<meta property="og:image" content="https://purplepyram1d.github.io/assets/images/homelab-walkthrough/00-Homelab.png">
+<link rel="canonical" href="https://purplepyram1d.github.io/">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -37,6 +40,20 @@
 
   <main id="main">
 
+  <!-- ============ STATUS ============ -->
+  <aside class="lab-status" aria-labelledby="status-heading">
+    <div class="status-head">
+      <span class="estate-label" id="status-heading">Now</span>
+      <span class="status-date">updated 2026-09-27</span>
+    </div>
+    <p>Writing up the RMM response layer: the host-risk scoring and evidence-gated containment behind the flagship detections.</p>
+    <ul>
+      <li>Wazuh manager and all six agents aligned on one version.</li>
+      <li>Lab mail domain now publishes SPF, DKIM, and DMARC; four new Wazuh rules for mailbox brute force and relay probes pass rule testing, with a live test next.</li>
+      <li>WS01 rebuilt from scratch and re-enrolled in Wazuh, Sysmon, and Velociraptor.</li>
+    </ul>
+  </aside>
+
   <!-- ============ HOMELAB ============ -->
   <section class="estate" aria-labelledby="estate-heading">
     <div class="sec-head">
@@ -46,7 +63,7 @@
 
     <div class="estate-overview">
       <div class="estate-summary">
-        <p class="estate-intro">I built an enterprise network simulation containing an Active Directory domain, 2 Windows 11 endpoints, a web server and SQL database, a dual-SIEM hosting Splunk and Wazuh, as well as a Kali VM and Ubuntu C2 server for adversary emulation. I use this to construct realistic attack/defend scenarios and produce my own incident response documentation.</p>
+        <p class="estate-intro">I built an enterprise network simulation containing an Active Directory domain, 2 Windows 11 endpoints, a web server and SQL database, a dual-SIEM hosting Splunk and Wazuh, and a Kali VM for adversary emulation, plus an Ubuntu C2 server that is currently parked. I use this to construct realistic attack/defend scenarios and produce my own incident response documentation.</p>
         <a class="estate-walkthrough-link" href="blog/posts/homelab-walkthrough-9-8-26.html">Read the homelab walkthrough &rarr;</a>
       </div>
       <a class="estate-photo" href="blog/posts/homelab-walkthrough-9-8-26.html" aria-label="Read the homelab walkthrough">
@@ -56,7 +73,7 @@
 
     <div class="estate-hosts" aria-label="Physical hosts">
       <div class="estate-host">
-        <span class="estate-label">CORP</span>
+        <span class="estate-label">LABHV</span>
         <strong>Enterprise</strong>
         <span>Windows 11 Host · VMware Workstation</span>
       </div>
@@ -121,9 +138,9 @@
           </tr>
           <tr>
             <td class="host">C2-01</td>
-            <td>Isolated control plane</td>
+            <td>Isolated control plane (parked)</td>
             <td>Ubuntu 26.04</td>
-            <td class="tech">Sliver · segmented lab services</td>
+            <td class="tech">Sliver</td>
           </tr>
         </tbody>
       </table>
@@ -132,7 +149,7 @@
     <aside class="project-snub" aria-labelledby="rmm-project-title">
       <span class="estate-label">Current flagship</span>
       <h3 id="rmm-project-title">RMM abuse detection and response</h3>
-      <p>Four lab-validated Wazuh rules progress from RMM identity to multiplicity, causal lineage, and high-confidence corroboration across Sysmon and Velociraptor. <a href="blog/posts/one-rmm-is-it-two-is-an-incident.html">Read writeup #1&nbsp;&rarr;</a></p>
+      <p>Four Wazuh rules, fired against a live lab workstation, progress from RMM identity to multiplicity, causal lineage, and high-confidence corroboration across Sysmon and Velociraptor. <a href="blog/posts/one-rmm-is-it-two-is-an-incident.html">Read writeup #1&nbsp;&rarr;</a></p>
     </aside>
   </section>
 

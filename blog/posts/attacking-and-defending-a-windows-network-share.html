@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Attacking and Defending a Windows Network Share &mdash; purplepyram1d</title>
+<title>Attacking and Defending a Windows Network Share | purplepyram1d</title>
 <meta name="description" content="I’ve got a vulnerable network share on domain controller DC01. SMB signing is disabled, and DC01 has overprivileged service accounts with predictable passwords. Let’s see what">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="../../assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="../../assets/css/site.css?v=2026090903">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026092701">
 
 <link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/attacking-and-defending-a-windows-network-share.html">
 
@@ -80,7 +80,7 @@ find "$LOOT_DIR" -name "stolen-*.txt" -mtime +7 -delete</pre>
         <img src="../../assets/images/attacking-and-defending-a-windows-network-share/01.png" alt="Stolen data.">
         <figcaption><span class="lab">Fig 1.</span> Stolen data.</figcaption>
       </figure>      <h2><span class="n">2</span>The Logs</h2>
-      <p>How would an administrator or security analyst discover this? We need to hunt for <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5145"><strong>Event 5145</strong></a> — A network share object was checked to see whether client can be granted desired access.</p>
+      <p>How would an administrator or security analyst discover this? We need to hunt for <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-5145"><strong>Event 5145</strong></a>: A network share object was checked to see whether client can be granted desired access.</p>
       <p>I cooked up a Splunk query that shows Kali specifically reaching for the sensitive_data.txt file along with the timestamps and IP address:</p><pre>index=* source="XmlWinEventLog:Security" EventCode=5145 
 IpAddress="192.168.56.36"
 RelativeTargetName="sensitive_data.txt"

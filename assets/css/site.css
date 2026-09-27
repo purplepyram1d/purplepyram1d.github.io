@@ -124,6 +124,17 @@ img{max-width:100%;height:auto;}
 }
 .thesis strong{color:var(--ink);font-weight:600;}
 
+/* ---------- lab status callout ---------- */
+.lab-status{
+  margin:0 0 3.25rem;padding:1rem 1.25rem 1.05rem;
+  border:1px solid var(--rule);border-left:3px solid var(--accent);background:var(--surface);
+}
+.lab-status .status-head{display:flex;align-items:baseline;gap:1rem;margin-bottom:.45rem;}
+.lab-status .status-date{font-family:var(--mono);font-size:calc(.6875rem + 1pt);color:var(--ink-3);margin-left:auto;}
+.lab-status p{margin:0 0 .5rem;font-size:calc(.9375rem + 1pt);line-height:1.55;color:var(--ink);}
+.lab-status ul{margin:0;padding-left:1.1rem;font-size:calc(.8125rem + 1pt);line-height:1.55;color:var(--ink-2);}
+.lab-status li{margin:.15rem 0;}
+
 /* ---------- sections ---------- */
 section{margin-bottom:3.5rem;}
 .sec-head{

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Installing Velociraptor in My Homelab &mdash; purplepyram1d</title>
+<title>Installing Velociraptor in My Homelab | purplepyram1d</title>
 <meta name="description" content="The service came up on the first try, then I deleted it and built it again, because I could not have told you what half of it was doing.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="../../assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="../../assets/css/site.css?v=2026090903">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026092701">
 
 <link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/installing-velociraptor-in-my-homelab.html">
 
@@ -59,28 +59,28 @@
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/03.png" alt="Step 3.">
         <figcaption><span class="lab">Fig 3.</span></figcaption>
       </figure>
-      <p>The service came up on the first try. By any reasonable measure I was done. Then I deleted all of it and built it again, because I could not have told you what half of it was actually doing. Following a sequence of commands and getting a working server is a different thing from understanding a working server.</p>      <h2><span class="n">1</span>Step 1 — Stage the Binary on Local Disk</h2>
+      <p>The service came up on the first try. By any reasonable measure I was done. Then I deleted all of it and built it again, because I could not have told you what half of it was actually doing. Following a sequence of commands and getting a working server is a different thing from understanding a working server.</p>      <h2><span class="n">1</span>Step 1: Stage the Binary on Local Disk</h2>
       <p>On my host Windows desktop, I ssh into my SIEM01 virtual machine first, and then run the following commands:</p><pre># Copy the downloaded binary from host machine to VM
 cp "/mnt/external/00 Setup/velociraptor-v0.77.1-linux-amd64" /tmp/velociraptor</pre><pre># Mark the binary executable so Linux will run it
 chmod +x /tmp/velociraptor</pre><pre># Confirm the binary runs and print its version
 /tmp/velociraptor version</pre>      <figure>
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/04.png" alt="Step 4.">
         <figcaption><span class="lab">Fig 4.</span></figcaption>
-      </figure>      <h2><span class="n">2</span>Step 2 — Generate the Config</h2>
+      </figure>      <h2><span class="n">2</span>Step 2: Generate the Config</h2>
       <p>Launch Velociraptor’s interactive config generator:</p><pre># Launch the interactive config generator (writes the server config with an embedded private CA)
 /tmp/velociraptor config generate -i</pre>
       <p>Using the following options:</p>      <figure>
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/05.png" alt="Step 5.">
         <figcaption><span class="lab">Fig 5.</span></figcaption>
       </figure>
-      <p>Two things bit me on version 0.77.1: the config generator tried to save a file containing private keys onto a network share, and it wrote localhost as the server address even though I typed the IP, which would have left every agent looking for the server on the wrong machine. Both are silent failures, so verify what actually got written instead of trusting what you typed.</p>      <h2><span class="n">3</span>Step 3 — Derive the Client Config</h2>
+      <p>Two things bit me on version 0.77.1: the config generator tried to save a file containing private keys onto a network share, and it wrote localhost as the server address even though I typed the IP, which would have left every agent looking for the server on the wrong machine. Both are silent failures, so verify what actually got written instead of trusting what you typed.</p>      <h2><span class="n">3</span>Step 3: Derive the Client Config</h2>
       <p>This produces the settings file the agents will carry:</p><pre># Read the server config and write out the matching client config
-/tmp/velociraptor --config /tmp/server.config.yaml config client &gt; /tmp/client.config.yaml</pre>      <h2><span class="n">4</span>Step 4 — Verify and Fix the Server URL</h2><pre># Show the server_urls key and the line beneath it
+/tmp/velociraptor --config /tmp/server.config.yaml config client &gt; /tmp/client.config.yaml</pre>      <h2><span class="n">4</span>Step 4: Verify and Fix the Server URL</h2><pre># Show the server_urls key and the line beneath it
 grep -A1 server_urls /tmp/client.config.yaml</pre><pre># Replace every localhost reference with the real server IP in both configs
 sed -i 's/localhost/10.10.10.5/g' /tmp/server.config.yaml /tmp/client.config.yaml</pre>      <figure>
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/06.png" alt="Step 6.">
         <figcaption><span class="lab">Fig 6.</span></figcaption>
-      </figure>      <h2><span class="n">5</span>Step 5 — Fix the GUI Bind Address</h2>
+      </figure>      <h2><span class="n">5</span>Step 5: Fix the GUI Bind Address</h2>
       <p>Now to make the web console reachable from the host desktop instead of only from the server itself:</p><pre># Show each bind_address with the port line beneath it so you can identify which section is which
 grep -n -A1 "bind_address" /tmp/server.config.yaml</pre>      <figure>
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/07.png" alt="Step 7.">
@@ -91,9 +91,9 @@ sed -i '65s/127.0.0.1/0.0.0.0/' /tmp/server.config.yaml</pre>      <figure>
         <figcaption><span class="lab">Fig 8.</span></figcaption>
       </figure>
       <p>The more secure alternative (if not working in an isolated lab environment):</p>
-      <p><em>Leave the GUI on </em><em>127.0.0.1 and reach it through an ssh tunnel from your workstation with </em><em>ssh -L 8889:127.0.0.1:8889 blue_admin@10.10.10.5, then browse </em><em>https://127.0.0.1:8889. The console then never listens on the LAN at all. Use this posture anywhere less isolated than a homelab.</em></p>      <h2><span class="n">6</span>Step 6 — Place and Lock the Configs</h2>
+      <p><em>Leave the GUI on </em><em>127.0.0.1 and reach it through an ssh tunnel from your workstation with </em><em>ssh -L 8889:127.0.0.1:8889 blue_admin@10.10.10.5, then browse </em><em>https://127.0.0.1:8889. The console then never listens on the LAN at all. Use this posture anywhere less isolated than a homelab.</em></p>      <h2><span class="n">6</span>Step 6: Place and Lock the Configs</h2>
       <p>Move the config files out of temp and restrict read/write to root because server.config.yaml holds the CA private key, so anyone who reads it can impersonate your server.</p><pre># Create the datastore and logs directories, move both configs in, then restrict the server config to root only
-mkdir -p /opt/velociraptor/logs &amp;&amp; mv /tmp/server.config.yaml /tmp/client.config.yaml /opt/velociraptor/ &amp;&amp; chmod 600 /opt/velociraptor/server.config.yaml</pre>      <h2><span class="n">7</span>Step 7 — Build the Service Package</h2>
+mkdir -p /opt/velociraptor/logs &amp;&amp; mv /tmp/server.config.yaml /tmp/client.config.yaml /opt/velociraptor/ &amp;&amp; chmod 600 /opt/velociraptor/server.config.yaml</pre>      <h2><span class="n">7</span>Step 7: Build the Service Package</h2>
       <p>Take the Velociraptor binary and use debian server to turn it into a proper Ubuntu installer. Worth reading before you let it register a service: the postinst creates a dedicated account that cannot log in, locks the config to root, and grants the binary only the specific privileges it needs rather than running as root.</p><pre># Change to /tmp, then build a .deb for the server role from the config (the .deb is written to /tmp)
 cd /tmp &amp;&amp; /tmp/velociraptor --config /opt/velociraptor/server.config.yaml debian server
 
@@ -105,8 +105,8 @@ cat /tmp/ctrl/postinst</pre>      <figure>
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/09.png" alt="Step 9.">
         <figcaption><span class="lab">Fig 9.</span></figcaption>
       </figure><pre># List the built package so you can see its exact filename
-ls -l /tmp/*.deb</pre>      <h2><span class="n">8</span>Step 8 — Install</h2><pre># Install the package, which places the binary and config, registers the systemd unit, and enables boot start
-dpkg -i /tmp/velociraptor-server-0.77.1.amd64.deb</pre>      <h2><span class="n">9</span>Step 9 — Verify</h2><pre># Confirm the service is active and running
+ls -l /tmp/*.deb</pre>      <h2><span class="n">8</span>Step 8: Install</h2><pre># Install the package, which places the binary and config, registers the systemd unit, and enables boot start
+dpkg -i /tmp/velociraptor-server-0.77.1.amd64.deb</pre>      <h2><span class="n">9</span>Step 9: Verify</h2><pre># Confirm the service is active and running
 systemctl status velociraptor_server --no-pager
 
 # Confirm the GUI is now on 0.0.0.0:8889 and the frontend on *:8000
@@ -124,7 +124,7 @@ curl -k -I https://10.10.10.5:8889</pre>
       <p>Then browse https://10.10.10.5:8889 from host desktop, accept the self-signed warning, and log in with the admin account created during setup:</p>      <figure>
         <img src="../../assets/images/installing-velociraptor-in-my-homelab/11.png" alt="Step 11.">
         <figcaption><span class="lab">Fig 11.</span></figcaption>
-      </figure>      <h2><span class="n">10</span>Step 10 — Enrolling a Client Endpoint</h2>
+      </figure>      <h2><span class="n">10</span>Step 10: Enrolling a Client Endpoint</h2>
       <p>The 2TB drive is physically attached to my Windows host and published as an SMB share. Both VMs reach the same disk from opposite sides: the Ubuntu SIEM box has it CIFS-mounted at /mnt/external, and the Windows endpoint reaches it over UNC at \\10.10.10.10\External.</p><pre># Copy the client config onto the shared drive
 cp /opt/velociraptor/client.config.yaml "/mnt/external/00 Setup/"</pre>
       <p>Now using my Windows 11 endpoint named WS01, create the working directory, copy the config file from SIEM01 along with the Velociraptor executable I downloaded from the official website. Note the IP rather than a hostname. The host is not domain-joined, so the lab’s DNS has no record for it, and \\CORP\External fails from the VMs even though Explorer happily shows the share under Network. Explorer finds it by broadcast discovery; the command line resolves through DNS and comes up empty. That mismatch looks like a permissions problem and is not one.</p><pre># Create the directory to store the config files

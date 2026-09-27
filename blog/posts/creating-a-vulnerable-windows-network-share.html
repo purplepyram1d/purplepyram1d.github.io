@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Creating a Vulnerable Windows Network Share &mdash; purplepyram1d</title>
+<title>Creating a Vulnerable Windows Network Share | purplepyram1d</title>
 <meta name="description" content="Think of it like creating a shared Google Drive folder, but instead of internet-based access, it uses your local network.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="../../assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="../../assets/css/site.css?v=2026090903">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026092701">
 
 <link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/creating-a-vulnerable-windows-network-share.html">
 
@@ -48,7 +48,7 @@
       <div class="art-meta">Johnny Meintel &middot; 2026-01-09</div>
 
 <p>Think of it like creating a shared Google Drive folder, but instead of internet-based access, it uses your local network.</p>      <h2><span class="n">1</span>Creating the Network Share</h2>
-      <p>I run these commands on my Windows Server 2022 Domain Controller — DC01:</p><pre># Create root directory for file shares
+      <p>I run these commands on my Windows Server 2022 Domain Controller, DC01:</p><pre># Create root directory for file shares
 New-Item "C:\Shares" -ItemType Directory -Force
 
 # Create departmental subdirectories
@@ -74,7 +74,7 @@ Get-SmbShare | Where-Object {$_.Path -like "C:\Shares\*"} | Format-Table Name, P
         <img src="../../assets/images/creating-a-vulnerable-windows-network-share/01.png" alt="Network shares created successfully.">
         <figcaption><span class="lab">Fig 1.</span> Network shares created successfully.</figcaption>
       </figure>
-      <p>The first step is to make sure another computer on the network can see these shares. I head over to my over domain-joined Windows 11 VM — MGR1 — and run these commands:</p><pre># Map the Public share to drive P:
+      <p>The first step is to make sure another computer on the network can see these shares. I head over to my over domain-joined Windows 11 VM, MGR1, and run these commands:</p><pre># Map the Public share to drive P:
 net use P: \\DC01\Public
 
 # Create a test file
@@ -109,7 +109,7 @@ net use P: /delete</pre>      <figure>
         <img src="../../assets/images/creating-a-vulnerable-windows-network-share/06.png" alt="Downloading it from KALI via smbclient.">
         <figcaption><span class="lab">Fig 6.</span> Downloading it from KALI via smbclient.</figcaption>
       </figure>      <h2><span class="n">3</span>Malicious Script</h2>
-      <p>Download successful. How about an upload? But now just any upload. Let’s create a “malicious script” — all it does it open a username and password box and records the entry to a text file on the shared drive:</p><pre>cat &gt; malicious_script.ps1 &lt;&lt; 'EOF'
+      <p>Download successful. How about an upload? But now just any upload. Let’s create a “malicious script”: all it does it open a username and password box and records the entry to a text file on the shared drive:</p><pre>cat &gt; malicious_script.ps1 &lt;&lt; 'EOF'
 # Fake "system update" script
 # Actually: credential harvester or reverse shell
 
