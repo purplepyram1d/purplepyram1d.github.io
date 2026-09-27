@@ -14,6 +14,14 @@
     .snapshot-banner{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;gap:.35rem 1rem;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:#111827;color:#e5e7eb;font:500 13px/1.4 Inter,system-ui,sans-serif}
     .snapshot-banner a{color:#c4b5fd;text-decoration:none;font-weight:600;white-space:nowrap}
     .snapshot-banner a:hover{text-decoration:underline}
+    /* Incident page on phones: the record grid had no column rule, so it grew to its longest word. */
+    .incident-record-view,.knowledge-article-view{grid-template-columns:minmax(0,1fr)}
+    .incident-record-view>*,.kb-page-layout>*,.incident-page-summary>*,.summary-group-grid>*{min-width:0}
+    .incident-record-view h1,.incident-record-view p,.incident-record-view strong,.incident-record-view span,.incident-record-view code,.incident-record-view li,.incident-record-view dd{overflow-wrap:anywhere}
+    /* Plain-English panel added under each incident header. */
+    .snapshot-plain{padding:16px 18px;border:1px solid rgba(77,198,198,.28);border-left:3px solid var(--accent);border-radius:var(--radius);background:rgba(77,198,198,.07)}
+    .snapshot-plain-label{margin:0 0 6px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
+    .snapshot-plain p:last-child{margin:0;color:var(--text);font-size:15px;line-height:1.6}
     #newIncident,#newKnowledge,#uploadEvidence,[data-incident-action="edit"],[data-incident-action="create-kb"],[data-incident-action="link-kb"],[data-kb-action="edit"],.source-link{display:none!important}
   </style>
 </head>
@@ -260,7 +268,7 @@
   </div>
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/snapshot.js?v=20260927"></script>
+  <script src="assets/snapshot.js?v=20260927b"></script>
   <script src="assets/app.js?v=20260927-snapshot" defer></script>
 </body>
 </html>

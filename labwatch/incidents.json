@@ -405,5 +405,10 @@
    ],
    "recordHash": "567c9416660d0ddf83834f1378e3991fddaa3ac63b7304fd8bb6b56c97e91bc6"
   }
- ]
+ ],
+ "plainEnglish": {
+  "INC-2026-0093": "One of the lab's workstations (WS02) ran a PowerShell command that had been scrambled into an unreadable, encoded form. Attackers often scramble commands like this to hide what they are doing, but administrators and automation tools sometimes do the same thing for harmless reasons. The analyst's next step is to unscramble the command, find out which account and which machine started it, and decide whether this was an intruder or authorized maintenance. Status: waiting for triage.",
+  "INC-2026-0094": "The same kind of scrambled PowerShell command ran on a second workstation (WS01). Seeing one pattern on two machines can mean an attacker moving between them, or one legitimate tool doing routine work on both. The analyst's next step is to decode the command, trace where it came from, and check whether it matches the activity on WS02 (INC-2026-0093). Status: waiting for triage.",
+  "INC-2026-0095": "PowerShell on the lab's application server (SRV01) wrote ten script and program files to disk within a few seconds. Malware often uses PowerShell to drop its next stage onto a server this way, but backups and software deployments write files the same way. The analyst's next step is to find out what created the files, compare them with the real application files, and confirm nothing was run from that folder. Status: waiting for triage."
+ }
 }
