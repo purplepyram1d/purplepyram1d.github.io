@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>hMailServer Alert Test | purplepyram1d</title>
+<meta name="description" content="Testing my own hMailServer failed-login detection: eleven failed logins from a Thunderbird client raise Wazuh rules 100321 and 100322, open a LabWatch incident, and get triaged step by step.">
+<meta name="author" content="Johnny Meintel">
+<link rel="icon" href="../../assets/images/logo-pyramid.png">
+<link rel="stylesheet" href="../../assets/css/site.css?v=2026092703">
+<style>
+  /* Wrap long lines so logs and commands do not overflow on mobile */
+  article pre { white-space: pre-wrap; overflow-wrap: break-word; }
+</style>
+
+<link rel="canonical" href="https://purplepyram1d.github.io/blog/posts/hmailserver-alert-test.html">
+
+<meta property="og:title" content="hMailServer Alert Test">
+<meta property="og:description" content="Testing my own hMailServer failed-login detection: eleven failed logins from a Thunderbird client raise Wazuh rules 100321 and 100322, open a LabWatch incident, and get triaged step by step.">
+<meta property="og:type" content="article">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+  <header class="masthead compact">
+    <div class="mast-row">
+      <div>
+        <a href="../../index.html"><h1 class="title sm">purplepyram<span class="dim">1</span>d</h1></a>
+      </div>
+      <nav class="mast-nav" aria-label="Primary">
+        <a href="../../index.html">Contents</a>
+        <a href="../index.html">Writing</a>
+        <a href="../../rooted.html">Log</a>
+        <a href="https://github.com/purplepyram1d">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" style="margin-top:2.5rem;">
+  <div class="grid">
+
+    <div class="rail">
+      <span>2026-09-30</span>
+      <span class="em">T1110.001</span>
+      <span>detection</span>
+      <span>~8 min</span>
+    </div>
+
+    <article>
+      <h1>hMailServer Alert Test</h1>
+      <div class="art-meta">Johnny Meintel &middot; 2026-09-30 &middot; detection</div>
+
+      <p class="lede">I installed hMailServer on a Windows Server 2022 box and created over a dozen fake email accounts to test with. After failing a few logins, I grabbed the relevant strings from hMailServer's logs. Claude Code helped turn them into the following Wazuh ruleset:</p>
+
+      <pre>&lt;!--
+  hMailServer mail-auth detection rules (fakecorp.local email-security surface).
+  Authored 2026-09-23 (Claude Code). IDs 100320-100323.
+  100322 fires at level 10 -&gt; auto-ingests as a LabWatch INC (feed = rule_level&gt;=9).
+  100321 stays level 5 (correlation fuel, not an INC on its own).
+--&gt;
+&lt;group name="hmailserver,mail,"&gt;
+
+  &lt;rule id="100320" level="0"&gt;
+    &lt;decoded_as&gt;hmailserver&lt;/decoded_as&gt;
+    &lt;description&gt;hMailServer: $(hmail.type) session activity&lt;/description&gt;
+  &lt;/rule&gt;
+
+  &lt;rule id="100321" level="5"&gt;
+    &lt;if_sid&gt;100320&lt;/if_sid&gt;
+    &lt;field name="hmail.msg" type="pcre2"&gt;(?i)invalid user name or password|authentication failed|535 authentication&lt;/field&gt;
+    &lt;description&gt;hMailServer: failed mailbox authentication from $(srcip)&lt;/description&gt;
+    &lt;group&gt;authentication_failed,pci_dss_10.2.4,&lt;/group&gt;
+  &lt;/rule&gt;
+
+  &lt;rule id="100322" level="10" frequency="6" timeframe="120"&gt;
+    &lt;if_matched_sid&gt;100321&lt;/if_matched_sid&gt;
+    &lt;same_source_ip /&gt;
+    &lt;description&gt;hMailServer: mailbox authentication brute force from $(srcip) (6+ failures/120s)&lt;/description&gt;
+    &lt;group&gt;authentication_failures,pci_dss_10.2.4,&lt;/group&gt;
+  &lt;/rule&gt;
+
+  &lt;rule id="100323" level="8"&gt;
+    &lt;if_sid&gt;100320&lt;/if_sid&gt;
+    &lt;field name="hmail.msg" type="pcre2"&gt;(?i)relay(ing)? (is )?(not allowed|denied)|530 5\.7\.1&lt;/field&gt;
+    &lt;description&gt;hMailServer: mail relay denied from $(srcip) (possible open-relay probe / spam attempt)&lt;/description&gt;
+    &lt;group&gt;mail,spam,&lt;/group&gt;
+  &lt;/rule&gt;
+
+&lt;/group&gt;</pre>
+
+      <p>The Wazuh agent on SRV01 reads the daily hMailServer log from <code>C:\Program Files (x86)\hMailServer\Logs\</code> and sends its lines to the manager. Rule 100320 is the level 0 base for decoded mail activity; it does not appear as an alert in the dashboard. Rule 100321 raises a failed login to level 5. Six failures from one source IP within 120 seconds trigger rule 100322 at level 10, which LabWatch ingests as an incident.</p>
+
+      <p>Rule 100323 looks for a relay-denied response. That can be a sign of an unauthorized attempt to send through the mail server, but it does not mean every message addressed outside <code>fakecorp.local</code> is suspicious. I have not triggered this rule yet, so I treat it as untested.</p>
+
+      <p>Trigger multiple failed logins to the same <code>fakecorp.local</code> account with Mozilla Thunderbird:</p>
+
+      <figure>
+        <img src="../../assets/images/hmailserver-alert-test/hmail-failed-login.png" alt="Thunderbird rejecting the password for a mailbox on the lab mail server.">
+        <figcaption><span class="lab">Fig 1.</span> Thunderbird's password prompt shows an authentication error.</figcaption>
+      </figure>
+
+      <p>This is what it looks like from hMailServer's log:</p>
+
+      <pre>"IMAPD" 4468    45      "2026-09-30 03:12:00.071"       "10.10.10.21"   "RECEIVED: 47 login "errosi@fakecorp.local" ***"
+"IMAPD" 4468    45      "2026-09-30 03:12:00.071"       "10.10.10.21"   "SENT: 47 NO Invalid user name or password."</pre>
+
+      <p>On SIEM01, rule 100321 matches the case-insensitive <code>Invalid user name or password</code> response after the SRV01 agent ships the log line. I can view the mail-rule alerts in Wazuh with:</p>
+
+      <pre>rule.id:(100320 or 100321 or 100322 or 100323)</pre>
+
+      <p>Here is the relevant part of the level 10 Wazuh alert as formatted JSON:</p>
+
+      <pre>{
+  "data": {
+    "srcip": "10.10.10.21",
+    "hmail": {
+      "msg": "SENT: 100 NO Invalid user name or password.",
+      "session": "41",
+      "thread": "4464",
+      "time": "2026-09-30 03:11:56.275",
+      "type": "IMAPD"
+    }
+  },
+  "rule": {
+    "firedtimes": 1,
+    "mail": false,
+    "level": 10,
+    "pci_dss": [
+      "10.2.4"
+    ],
+    "description": "hMailServer: mailbox authentication brute force from 10.10.10.21 (6+ failures/120s)",
+    "groups": [
+      "hmailserver",
+      "mail",
+      "authentication_failures"
+    ],
+    "id": "100322",
+    "frequency": 6
+  }
+}</pre>
+
+      <figure>
+        <img src="../../assets/images/hmailserver-alert-test/hmail-failed-login-2.png" alt="Wazuh alerts on the left and the hMailServer log on the right for the same failed logins.">
+        <figcaption><span class="lab">Fig 2.</span> Wazuh's Threat Hunting events (left) and the hMailServer log (right), matching line for line.</figcaption>
+      </figure>
+
+      <p>On the right is hMailServer's log file, and on the left is Wazuh's successful alert firing. The Wazuh server has a Splunk forwarder attached, so the alert was ingested there as well:</p>
+
+      <figure>
+        <img src="../../assets/images/hmailserver-alert-test/hmail-failed-login-3.png" alt="The level 10 alert as it appears in Splunk&#x27;s LabWatch ingestion feed.">
+        <figcaption><span class="lab">Fig 3.</span> The same level 10 alert found in Splunk.</figcaption>
+      </figure>
+
+      <p>An incident was automatically created in my LabWatch portal:</p>
+
+      <figure>
+        <img src="../../assets/images/hmailserver-alert-test/hmail-failed-login-labwatch.png" alt="The incident as LabWatch created it, before triage.">
+        <figcaption><span class="lab">Fig 4.</span> The incident as LabWatch created it, assigned to me and before I triaged it.</figcaption>
+      </figure>
+
+      <p>Assigned Analyst: Johnny Meintel (me)</p>
+
+      <p>Assignment Group: SOC Operations</p>
+
+      <p>What does an analyst do with a suspicious failed login? Let's break it down one step at a time.</p>
+
+      <h2><span class="n">1</span>I need the source IP address</h2>
+
+      <p><code>10.10.10.21</code></p>
+
+      <p>That is WS01 on the internal <code>10.10.10.0/24</code> network. I know I generated this lab activity. If this were a real incident, though, I could not call it benign just because the address is internal. A user might mistype a password, or an attacker might be using a compromised workstation. I would check the server replies and the wider timeline before deciding.</p>
+
+      <h2><span class="n">2</span>Check the hMailServer logs directly</h2>
+
+      <p>Using the log time recorded in the Wazuh event (<code>2026-09-30 03:11:56.275</code>), I head to SRV01 and query the log.</p>
+
+      <p>What matters:</p>
+
+      <pre>#   Time (Pacific)   Source        Mailbox tried           Server reply
+1   03:11:50.438     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+2   03:11:51.933     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+3   03:11:53.166     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+4   03:11:54.215     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+5   03:11:55.209     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+6   03:11:56.275     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password - rule 100322 (level 10) fired here
+7   03:11:57.260     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+8   03:11:58.274     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+9   03:11:58.961     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+10  03:12:00.071     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password
+11  03:12:01.810     10.10.10.21   errosi@fakecorp.local   NO Invalid user name or password</pre>
+
+      <p>11 failed logins in 11 seconds, all to the same user.</p>
+
+      <p>Affected account: <code>errosi@fakecorp.local</code>.</p>
+
+      <h2><span class="n">3</span>Widen the time window. Has this source IP touched other accounts?</h2>
+
+      <p>The 11 <code>errosi</code> failures explain why rule 100322 fired, but they do not tell me everything WS01 did. I searched the hMailServer logs retained on SRV01 for login requests and replies from <code>10.10.10.21</code>.</p>
+
+      <p>The results include <code>asullivan@fakecorp.local</code> before the alert and again afterward. One pair I can verify is:</p>
+
+      <pre>03:20:55.816  session 47  RECEIVED: 97 login "asullivan@fakecorp.local" ***
+03:20:55.816  session 47  SENT: 97 OK LOGIN completed</pre>
+
+      <p>The matching session number (<code>47</code>) and command tag (<code>97</code>) tie the request to the server reply. <code>OK LOGIN completed</code> means that login worked. It happened about nine minutes after the <code>errosi</code> failures. I made that login myself. In a real incident, the log alone would not tell me who was at WS01.</p>
+
+      <figure>
+        <img src="../../assets/images/hmailserver-alert-test/asullivan.png" alt="A successful login pair for asullivan in the hMailServer log.">
+        <figcaption><span class="lab">Fig 5.</span> The successful asullivan login and its server reply, matched by session and command tag.</figcaption>
+      </figure>
+
+      <h2><span class="n">4</span>What would this mean in a real incident?</h2>
+
+      <p>In this lab, I caused the failed <code>errosi</code> attempts and the <code>asullivan</code> logins from WS01. I used Thunderbird to make the mail service generate the activity, then followed that activity through hMailServer, Wazuh, Splunk, and LabWatch.</p>
+
+      <p>If I saw this pattern in an organization where I did not already know the operator, the successful <code>asullivan</code> login would change the question. I would check whether that success belonged to the real user, whether the workstation was under their control, and whether the account did anything unusual after login.</p>
+
+      <h2><span class="n">5</span>Document incident</h2>
+
+      <p>For <code>INC-2026-0103</code>, I know this was my authorized mail-rule test. Rule 100322 correctly fired on the sixth failed login, and the case correctly opened in LabWatch. The appropriate classification is <strong>Expected Test Activity</strong>, not False Positive.</p>
+
+      <p>I attach the relevant hMail log excerpt, the exact Wazuh alert, and the Splunk result; record the source, both mailbox names, the 03:11:50 to 03:12:01 failure burst, and the 03:20:55 successful login, and then state that I performed the test and what the detection validated.</p>
+
+      <h2>Here's how the incident broke down</h2>
+
+      <h3><strong>Observed facts</strong></h3>
+
+      <pre>Began hMailServer failed-login alert testing at about 3:10 AM PT. Eleven failed IMAP logins for errosi@fakecorp.local came from 10.10.10.21 (WS01) between 03:11:50 and 03:12:01 PT, about 11 seconds, roughly one per second. Rule 100321 (level 5) fired for each failure; rule 100322 (level 10) fired once, on the sixth failure at 03:11:56, and opened this incident. The auto-ban threshold had been raised from 3 to 12 for the test.</pre>
+
+      <h3><strong>Classification and severity</strong></h3>
+
+      <pre>Expected Test Activity. Severity: Informational.</pre>
+
+      <h3><strong>MITRE ATT&amp;CK and NIST</strong></h3>
+
+      <pre>T1110.001 (Brute Force: Password Guessing). NIST CSF 2.0: DE.CM (Continuous Monitoring) and DE.AE (Adverse Event Analysis).</pre>
+
+      <h3><strong>Scope</strong></h3>
+
+      <pre>One source (10.10.10.21, WS01) and one host (SRV01, hMailServer IMAP on port 143). Eleven failed logins for one mailbox that does not exist: errosi@fakecorp.local, a mistyped name (the real address is erossi@fakecorp.local). The same source also had successful logins to asullivan@fakecorp.local before and after the burst, roughly every 10 minutes from 01:48 to 03:10 and again at 03:20:55. No other mailbox had a failed login.</pre>
+
+      <h3><strong>Attribution</strong></h3>
+
+      <pre>Benign by attribution. This was my own test from WS01 to verify rules 100321 and 100322. The mail server answers the same way for a wrong password and for a mailbox that does not exist, so the log alone cannot tell those two cases apart.</pre>
+
+      <h3><strong>Impact</strong></h3>
+
+      <pre>None. No account was compromised and no data was read. The only successful logins were to asullivan@fakecorp.local from the same workstation, from the mail client's regular checks and my own logins. Mailboxes have no lockout, and the auto-ban threshold (12) was not reached.</pre>
+
+      <h3><strong>Detection</strong></h3>
+
+      <pre>Rule 100321 fired for each failure. Rule 100322 fired on the sixth failure, and LabWatch opened the incident. After it fired, the count reset: five more failures did not raise a second level 10. At the mail server's default auto-ban of 3 failures, the ban would have blocked the source before the sixth failure, so 100322 would not have fired at all.</pre>
+
+      <h3><strong>Lessons</strong></h3>
+
+      <pre>A mail server's built-in ban can silence a brute-force rule, so I raised the threshold to 12 to test it. A successful login after a run of failures is what would turn this into a real escalation, so in a real case I would check for one before closing.</pre>
+
+    </article>
+  </div>
+  </main>
+
+  <footer>
+    <div class="grid">
+      <div class="rail"><span>about</span></div>
+      <div class="colophon">
+        <p class="fine">
+          <a href="https://github.com/purplepyram1d">github</a> &middot;
+          <a href="https://www.linkedin.com/in/johnnymeintel">linkedin</a><br>
+          <a href="../../index.html">&larr; contents</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+</div>
+</body>
+</html>
