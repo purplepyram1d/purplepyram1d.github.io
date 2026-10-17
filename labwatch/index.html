@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Read-only snapshot of LabWatch, the incident queue in Johnny Meintel's home-lab SOC.">
+  <meta name="description" content="Selected resolved homelab investigations by Johnny Meintel in a read-only LabWatch snapshot.">
   <meta name="robots" content="noindex">
   <title>LabWatch | snapshot | purplepyram1d</title>
   <link rel="icon" href="data:,">
@@ -26,7 +26,7 @@
   </style>
 </head>
 <body>
-  <div class="snapshot-banner" role="note"><span><strong>Read-only snapshot</strong> of LabWatch, the incident queue in my home-lab SOC, taken 2026-09-27. Click an incident to see what the analyst sees.</span><a href="../index.html">&larr; Back to purplepyram1d</a></div>
+  <div class="snapshot-banner" role="note"><span><strong>Resolved homelab cases</strong>, updated October 17, 2026. Edited excerpts of my investigations, including assisted review where stated. This is a read-only selection, not the live queue; raw evidence remains private.</span><a href="../index.html">&larr; Back to purplepyram1d</a></div>
   <a class="skip-link" href="#main">Skip to main content</a>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Primary navigation">
@@ -35,10 +35,10 @@
         <div><strong>LabWatch</strong><small>FakeCorp Security Operations</small></div>
       </a>
       <nav id="primaryNav">
-        <button class="nav-item active" data-view="all"><span class="nav-icon">▦</span>All incidents<span class="nav-count" id="navAll">0</span></button>
+        <button class="nav-item" data-view="all"><span class="nav-icon">▦</span>All incidents<span class="nav-count" id="navAll">0</span></button>
         <button class="nav-item" data-view="active"><span class="nav-icon">◉</span>Active queue<span class="nav-count" id="navActive">0</span></button>
         <button class="nav-item" data-view="mine"><span class="nav-icon">◎</span>My incidents<span class="nav-count" id="navMine">0</span></button>
-        <button class="nav-item" data-view="resolved"><span class="nav-icon">✓</span>Resolved<span class="nav-count" id="navResolved">0</span></button>
+        <button class="nav-item active" data-view="resolved"><span class="nav-icon">✓</span>Resolved<span class="nav-count" id="navResolved">0</span></button>
         <button class="nav-item" data-view="drafts"><span class="nav-icon">□</span>Drafts<span class="nav-count" id="navDrafts">0</span></button>
       </nav>
       <div class="sidebar-section">
@@ -71,7 +71,7 @@
 
       <main id="main">
         <section class="page-heading">
-          <div><p class="eyebrow">Security operations</p><h1 id="pageTitle">Incident workspace</h1><p id="pageSubtitle">Track homelab incidents from intake through investigation, response, and validated closure.</p></div>
+          <div><p class="eyebrow">Security operations</p><h1 id="pageTitle">Resolved incidents</h1><p id="pageSubtitle">Explore selected closed lab cases, the evidence behind the decisions, and the limits of each result.</p></div>
           <button class="primary-button" id="newIncident"><span>+</span> New incident</button>
         </section>
 
@@ -268,7 +268,7 @@
   </div>
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/snapshot.js?v=20260927b"></script>
-  <script src="assets/app.js?v=20260927-snapshot" defer></script>
+  <script src="assets/snapshot.js?v=20261017"></script>
+  <script src="assets/app.js?v=20261017-resolved" defer></script>
 </body>
 </html>

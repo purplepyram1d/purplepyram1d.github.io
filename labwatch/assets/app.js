@@ -35,7 +35,7 @@
     drafts: 'Draft incidents', metrics: 'Incident metrics', frameworks: 'Framework coverage', knowledge: 'Knowledge base',
   };
   const state = {
-    records: [], knowledge: [], view: 'all', severity: 'all', status: 'all', category: 'all', asset: 'all', sort: 'opened_desc',
+    records: [], knowledge: [], view: 'resolved', severity: 'all', status: 'all', category: 'all', asset: 'all', sort: 'opened_desc',
     kbStatus: 'all', kbCategory: 'all', kbTag: '', search: '', storage: 'checking',
     queryConditions: [], appliedQueryConditions: [], attack: null, nist: null, editingMitre: [], editingNist: [],
     frameworkChart: 'bar', frameworkFamily: 'all', frameworkSearch: '',
@@ -163,7 +163,9 @@
       const incidents = await api('list');
       state.records = Array.isArray(incidents.records) ? incidents.records : [];
       state.storage = 'server';
-      setConnection('Read-only snapshot, 2026-09-27', 'online');
+      setConnection('Read-only case excerpts, 2026-10-17', 'online');
+      $('#pageTitle').textContent = VIEW_TITLES[state.view] || VIEW_TITLES.resolved;
+      $$('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === state.view));
       try {
         const knowledge = await api('kb-list');
         state.knowledge = Array.isArray(knowledge.records) ? knowledge.records : [];
@@ -541,8 +543,9 @@
 
   function leaveIncidentPage() {
     history.pushState(null, '', `${window.location.pathname}${window.location.search}`);
-    state.view = 'all';
-    $$('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === 'all'));
+    state.view = 'resolved';
+    $('#pageTitle').textContent = VIEW_TITLES.resolved;
+    $$('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === 'resolved'));
     render();
   }
 
@@ -1157,6 +1160,7 @@
   }
 
   function renderProvenance(record) {
+    if (record.publicExcerpt) return '<section class="provenance-block"><strong>Published case excerpt</strong><p>Based on the private LabWatch record, reviewed October 17, 2026. Original status, severity and classification are retained. Narrative is edited for public reading; raw events and attachments remain private.</p><small>' + escapeHtml(record.publicWorkCredit || '') + '</small></section>';
     if (record.origin !== 'auto-ingest') return '';
     const occurrences = Number(record.sourceEventCount) || 1;
     const relatedCount = Array.isArray(record.relatedEvents) ? record.relatedEvents.length : 0;
@@ -1268,7 +1272,7 @@
 
   function renderEvidenceFileList(target, files) {
     if (!files.length) {
-      target.innerHTML = '<p class="evidence-empty">No evidence packages attached.</p>';
+      target.innerHTML = '<p class="evidence-empty">Original evidence remains in the private lab. No attachment downloads are published in this excerpt.</p>';
       return;
     }
     target.innerHTML = files.map((file) => `<article class="evidence-file">
@@ -1366,6 +1370,7 @@
   }
 
   function renderSourceActions(record) {
+    if (record.publicExcerpt) return '';
     if (record.origin !== 'auto-ingest') return '';
     const source = String(record.sourceSystem || record.alertSource || '').toLowerCase();
     const wazuhUrl = source.includes('wazuh') ? wazuhIncidentUrl(record) : '';
@@ -1436,9 +1441,9 @@
     hideContentViews();
     $('#metricGrid').classList.add('hidden');
     $('#incidentRecordView').classList.remove('hidden');
-    state.view = 'all';
+    state.view = record.publicExcerpt ? 'resolved' : 'all';
     document.title = `${record.id} | ${record.title} | LabWatch`;
-    $$('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === 'all'));
+    $$('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === state.view));
     const sections = [
       ['Initial alert', record.initialAlert], ['Observed facts', record.observedFacts], ['Scope determination', record.scope],
       ['Attribution assessment', record.attribution], ['Impact assessment', record.impact],
@@ -1447,7 +1452,9 @@
       ['Eradication', record.eradication], ['Recovery and monitoring', record.recovery], ['Final determination', record.conclusion],
       ['Validation performed', record.validation], ['Lessons learned and follow-up', record.lessons],
     ];
-    const attestation = record.integrityConfirmed
+    const attestation = record.publicExcerpt
+      ? '<span>✓</span><div>Closed case. The investigation and any assisted review or cleanup are attributed in this excerpt.'
+      : record.integrityConfirmed
       ? '<span>✓</span><div>Closure attestation confirmed: this record contains no invented observations and is supported by retained evidence.'
       : '<span>○</span><div>Closure attestation is not yet confirmed. This incident may still be in intake, investigation, containment, or monitoring.';
     $('#incidentRecordView').innerHTML = `
@@ -1503,6 +1510,7 @@
     return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Record field';
   }
   function renderHashStatus(record) {
+    if (record.publicExcerpt) return '<div class="record-hash not-generated"><strong>Public excerpt</strong><span>This edited copy is not the original hashed record. Original record-integrity checks and evidence packages remain in the private lab.</span></div>';
     if (!record.recordHash || record.hashStatus === 'not-generated') {
       return '<div class="record-hash not-generated"><strong>SHA-256 change-detection hash</strong><span>Not generated. LabWatch will create this fingerprint the next time the record is saved.</span></div>';
     }
