@@ -7,7 +7,7 @@
 <meta name="description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="assets/css/site.css?v=2026092703">
+<link rel="stylesheet" href="assets/css/site.css?v=2026102801">
 <meta property="og:title" content="purplepyram1d | Johnny Meintel">
 <meta property="og:description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta property="og:type" content="website">
@@ -45,7 +45,7 @@
   <aside class="lab-status" aria-labelledby="status-heading">
     <div class="status-head">
       <span class="estate-label" id="status-heading">Now</span>
-      <span class="status-date">updated 2026-10-17</span>
+      <span class="status-date">updated 2026-10-28</span>
     </div>
     <p>Practicing alert investigation and recovery in my homelab, with selected completed cases available in the public LabWatch snapshot.</p>
     <ul>
@@ -65,8 +65,11 @@
 
     <div class="estate-overview">
       <div class="estate-summary">
-        <p class="estate-intro">I built an Active Directory lab with two Windows 11 endpoints, a shared application server, Wazuh and Splunk, a Kali workstation, and an available Sliver C2 server for separately scoped exercises. SRV01 combines deliberately vulnerable web practice with protected document and incident-management services. I use the lab to investigate alerts, test detections, troubleshoot failures, and document recovery.</p>
-        <a class="estate-walkthrough-link" href="blog/posts/homelab-walkthrough-9-8-26.html">Read the homelab walkthrough &rarr;</a>
+        <p class="estate-intro">I built an Active Directory lab with two Windows 11 endpoints, a shared application server, Wazuh detection, Elasticsearch/Kibana analysis, a Kali workstation, and a Suricata/Zeek network sensor. SRV01 combines deliberately vulnerable web practice with protected document and incident-management services. I use the lab to investigate alerts, test detections, troubleshoot failures, and document recovery.</p>
+        <div class="estate-links">
+          <a class="estate-walkthrough-link" href="blog/posts/homelab-walkthrough-9-8-26.html">Read the September walkthrough &rarr;</a>
+          <a class="estate-walkthrough-link" href="https://github.com/purplepyram1d/homelab">Explore the homelab code &rarr;</a>
+        </div>
       </div>
       <a class="estate-photo" href="blog/posts/homelab-walkthrough-9-8-26.html" aria-label="Read the homelab walkthrough">
         <img src="assets/images/homelab-walkthrough/00-Homelab.png" alt="My SOC homelab, with the defensive workstation, enterprise consoles, and adversary laptop." width="1266" height="458" fetchpriority="high">
@@ -124,13 +127,13 @@
             <td class="host">SIEM01</td>
             <td>Detection and DFIR</td>
             <td>Ubuntu 26.04</td>
-            <td class="tech">Wazuh · Velociraptor · Splunk Universal Forwarder</td>
+            <td class="tech">Wazuh · Velociraptor · Elastic alert forwarder</td>
           </tr>
           <tr>
             <td class="host">SIEM02</td>
             <td>Analytics and decision layer</td>
             <td>Ubuntu 26.04</td>
-            <td class="tech">Splunk Enterprise · risk correlation · LabWatch alert feed</td>
+            <td class="tech">Elasticsearch · Kibana · Wazuh and network analysis</td>
           </tr>
           <tr>
             <td class="host">KALI</td>
@@ -139,10 +142,10 @@
             <td class="tech">Nmap · Impacket · NetExec · BloodHound</td>
           </tr>
           <tr>
-            <td class="host">C2-01</td>
-            <td>Adversary infrastructure</td>
+            <td class="host">NDR01</td>
+            <td>Passive network sensor</td>
             <td>Ubuntu 26.04</td>
-            <td class="tech">Sliver · lab callback logger · scoped exercises</td>
+            <td class="tech">Suricata · Zeek · mirrored switch traffic</td>
           </tr>
         </tbody>
       </table>
@@ -153,7 +156,7 @@
       <h3 id="srv01-services-title">Web practice, protected services, and their evidence</h3>
       <p><strong>Practice:</strong> FakeCorp provides synthetic login and database exercises. DVWA adds web-vulnerability labs, and BountyAPI adds object-ownership and access-control practice. High-risk execution, executable upload, file-inclusion, and connectivity routes stay excluded where specified on this shared server; these applications are not internet-facing.</p>
       <p><strong>Protected services:</strong> Corp Documents uses Windows sign-in, AD group permissions, HTTPS, and Defender-scanned uploads. LabWatch uses Windows sign-in and HTTPS. Mail publishes SPF, DKIM, and DMARC, with STARTTLS required for client IMAP and submission.</p>
-      <p><strong>Operations:</strong> Application audit logs feed Wazuh and Splunk. Health checks and off-host backup copies support recovery work; a DVWA scratch-database restore and full per-exercise validation remain open. C2 infrastructure is available, but an implant callback has not been validated.</p>
+      <p><strong>Operations:</strong> Application audit logs feed Wazuh. LabWatch receives Wazuh alerts directly; Elastic searches a separate copy of those alerts and available network telemetry. Health checks and off-host backup copies support recovery work; a DVWA scratch-database restore and full per-exercise validation remain open.</p>
     </aside>
 
     <aside class="project-snub" aria-labelledby="rmm-project-title">
@@ -187,7 +190,7 @@
         <div class="rail"><span>2026-09-08</span><span class="em">Homelab</span><span>~47 min</span></div>
         <div class="entry">
           <h3><a href="blog/posts/homelab-walkthrough-9-8-26.html">Homelab Walkthrough</a></h3>
-          <p>A walkthrough of my eleven-system SOC homelab, from physical hosts and Active Directory to Wazuh, Velociraptor, Splunk, Sliver, and LabWatch incident response.</p>
+          <p>A September snapshot of my SOC homelab, from physical hosts and Active Directory to Wazuh, Velociraptor, the former Splunk and C2 roles, and LabWatch incident response.</p>
         </div>
       </div>
 

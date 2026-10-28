@@ -378,6 +378,7 @@ button,input,select,textarea{font-family:var(--mono);}
 .estate-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:2.5rem;margin-bottom:1.5rem;}
 .estate-summary{min-width:0;}
 .estate-summary .estate-intro{max-width:none;margin-bottom:1rem;}
+.estate-links{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;}
 .estate-walkthrough-link{font-size:calc(.8125rem + 1pt);border-bottom:1px solid var(--accent);}
 .estate-walkthrough-link:hover{color:var(--accent);}
 .estate-photo{display:block;border:1px solid var(--rule);}
