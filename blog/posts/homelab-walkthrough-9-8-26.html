@@ -1708,100 +1708,9 @@ else:
 <pre><code class="language-plaintext">no RMM-range (100210-100259) alert found yet; run the capstone detonation first
 </code></pre>
 <hr>
-<p>Wazuh and Velociraptor confirm collection at SIEM01. SIEM02 provides the second analytics view and makes it possible to compare current Wazuh state with indexed history.</p>
-<h2>SIEM02</h2>
-<h3>Platform and receiver health</h3>
-<p>Wazuh shows whether a rule matched in current telemetry. The Splunk instance supports longer-term aggregation and risk analysis across many alerts. Splunk runs through its non-root <code>splunk</code> service account, so the status command is wrapped in <code>runuser</code>. The <code>splunkd is running</code> message and helper-process IDs establish the base service state.</p>
-<pre><code class="language-bash"># Print SIEM02&#39;s operating-system, kernel, and virtualization identity.
-hostnamectl
-
-# Ask Splunk to report its daemon and helper-process status as the service account.
-sudo runuser -u splunk -- /opt/splunk/bin/splunk status
-</code></pre>
-<pre><code class="language-plaintext">Static hostname: siem02
-Icon name: computer-vm
-Chassis: vm 🖴
-Chassis Asset Tag: No Asset Tag
-Machine ID: c56c2233934c4988b1243a3db53dbe32
-Boot ID: 30ac29c61e004faba9d0d605379de52c
-Product UUID: fcf64d56-61e3-e403-0267-48b069fd36e6
-AF_VSOCK CID: 1778202342
-Virtualization: vmware
-Operating System: Ubuntu 26.04 LTS
-Kernel: Linux 7.0.0-30-generic
-Architecture: x86-64
-Hardware Vendor: VMware, Inc.
-Hardware Model: VMware Virtual Platform
-Hardware Serial: VMware-56 4d f6 fc e3 61 03 e4-02 67 48 b0 69 fd 36 e6
-Hardware Version: None
-Firmware Version: 6.00
-Firmware Date: Tue 2026-02-17
-Firmware Age: 6month 3w
-
-
-splunkd is running (PID: 442607).
-splunk helpers are running (PIDs: 442776 443164 443168 443289 443300 452340).
-</code></pre>
-<p>Port 9997 is Splunk&#39;s receiving port, where SIEM01&#39;s forwarder sends.</p>
-<pre><code class="language-bash"># Confirm that Splunk is listening for forwarder traffic on TCP 9997.
-ss -lntp | grep &#39;:9997&#39;
-</code></pre>
-<pre><code class="language-plaintext">LISTEN 0      128          0.0.0.0:9997       0.0.0.0:*    users:((&quot;splunkd&quot;,pid=442607,fd=70))
-</code></pre>
-<h3>Splunk searches</h3>
-<p>In the Splunk dashboard, I view a per-endpoint count of alerts indexed in the last day and when each was last seen:</p>
-<pre><code class="language-spl">index=wazuh-alerts earliest=-24h
-| stats count, latest(_time) as last by agent.name
-| eval last=strftime(last,&quot;%F %T&quot;)
-| sort -count
-</code></pre>
-<p>Here, the first line limits the data to the Wazuh index and the last 24 hours. <code>stats</code> groups the count and newest timestamp by agent, <code>eval</code> formats that timestamp, and <code>sort</code> places the noisiest agent first.</p>
-<figure>
-<img src="../../assets/images/homelab-walkthrough/06-Splunk.png" alt="Per-endpoint alert counts and last-seen timestamps in Splunk." width="1910" height="522" loading="lazy">
-<figcaption><span class="lab">Fig 6.</span> Per-endpoint alert counts and last-seen timestamps in Splunk.</figcaption>
-</figure>
-
-
-<p>I then chart the same data as a time series to show when each host was noisy. <code>timechart span=1h</code> creates one-hour buckets.</p>
-<pre><code class="language-spl">index=wazuh-alerts earliest=-24h
-| timechart span=1h count by agent.name
-</code></pre>
-<p>The first line selects the same 24-hour Wazuh window. <code>timechart</code> then creates one-hour buckets and a separate count series for each agent.</p>
-<figure>
-<img src="../../assets/images/homelab-walkthrough/07-Splunk-Hourly.png" alt="Hourly Wazuh alert counts by agent in Splunk." width="1914" height="906" loading="lazy">
-<figcaption><span class="lab">Fig 7.</span> Hourly Wazuh alert counts by agent in Splunk.</figcaption>
-</figure>
-
-
-<h3>CLI verification</h3>
-<p>Finally, I query Splunk directly from the CLI:</p>
-<pre><code class="language-bash"># Read the Splunk administrator password without echoing it to the terminal.
-read -rsp &#39;Splunk admin password: &#39; SPLUNK_PASSWORD
-# Move the prompt to a clean line after the hidden input.
-echo
-
-# Search the complete Wazuh index and suppress Splunk&#39;s changing preview rows.
-sudo runuser -u splunk -- /opt/splunk/bin/splunk search \
-  &#39;index=wazuh-alerts earliest=0 latest=now | stats count by agent.name | sort agent.name&#39; \
-  -preview false \
-  -auth &quot;admin:$SPLUNK_PASSWORD&quot;
-
-# Remove the plaintext password from the current shell environment.
-unset SPLUNK_PASSWORD
-</code></pre>
-<pre><code class="language-plaintext">WARNING: Server Certificate Hostname Validation is disabled. Please see server.conf/[sslConfig]/cliVerifyServerName for details.
-agent.name count
----------- ------
-DC01        97729
-SRV01       11560
-WS01         5935
-WS02         9274
-siem01     394291
-siem02       4925
-</code></pre>
-<p>This recorded search returned 523,714 alerts across all indexed time. The volume shows that the lab needs tuning, but the count alone does not identify false positives; rule-level review is still required. Because this is a captured result, later runs will return a higher total and a later time boundary.</p>
+<p>Wazuh and Velociraptor confirm collection at SIEM01.</p>
 <hr>
-<p>The monitoring path is now accounted for from endpoint to index. The final section changes perspective and validates what the isolated attacker VM can discover and generate on the same lab network.</p>
+<p>The monitoring path is now accounted for from endpoint to SIEM. The final section changes perspective and validates what the isolated attacker VM can discover and generate on the same lab network.</p>
 <h2>KALI</h2>
 <h3>Host and tool inventory</h3>
 <p>Every other machine is something to protect and monitor; this is the one I attack from. What defines it is the offensive toolset and the absence of any agent.</p>
@@ -2092,7 +2001,7 @@ LISTEN 0      4096               *:443              *:*    users:((&quot;sliver-
 <p>I have a front-end incident management portal which automatically ingests high severity alerts:</p>
 <figure>
 <img src="../../assets/images/homelab-walkthrough/08-LabWatch.png" alt="The LabWatch incident management portal." width="1884" height="902" loading="lazy">
-<figcaption><span class="lab">Fig 8.</span> The LabWatch incident management portal.</figcaption>
+<figcaption><span class="lab">Fig 6.</span> The LabWatch incident management portal.</figcaption>
 </figure>
 
 
@@ -2100,35 +2009,35 @@ LISTEN 0      4096               *:443              *:*    users:((&quot;sliver-
 <p>I even have knowledge base articles for recurring incidents and additional reference material:</p>
 <figure>
 <img src="../../assets/images/homelab-walkthrough/09-KB.png" alt="LabWatch knowledge base articles and reference material." width="1890" height="908" loading="lazy">
-<figcaption><span class="lab">Fig 9.</span> LabWatch knowledge base articles and reference material.</figcaption>
+<figcaption><span class="lab">Fig 7.</span> LabWatch knowledge base articles and reference material.</figcaption>
 </figure>
 
 
 <p>The MITRE ATT&amp;CK framework is built-in to the incident response template:</p>
 <figure>
 <img src="../../assets/images/homelab-walkthrough/10-MITRE.png" alt="MITRE ATT&amp;CK context in the incident response template." width="1654" height="902" loading="lazy">
-<figcaption><span class="lab">Fig 10.</span> MITRE ATT&amp;CK context in the incident response template.</figcaption>
+<figcaption><span class="lab">Fig 8.</span> MITRE ATT&amp;CK context in the incident response template.</figcaption>
 </figure>
 
 
 <p>Each INC has links to open the corresponding event in Wazuh or Splunk (including the correlated events):</p>
 <figure>
 <img src="../../assets/images/homelab-walkthrough/10-INC.png" alt="Incident links to source events and correlated evidence in Wazuh and Splunk." width="1414" height="784" loading="lazy">
-<figcaption><span class="lab">Fig 11.</span> Incident links to source events and correlated evidence in Wazuh and Splunk.</figcaption>
+<figcaption><span class="lab">Fig 9.</span> Incident links to source events and correlated evidence in Wazuh and Splunk.</figcaption>
 </figure>
 
 
 <p>The INC evidence package can be downloaded as a <code>.zip</code> file, containing the raw JSON event files and analyst commands used. </p>
 <figure>
 <img src="../../assets/images/homelab-walkthrough/11-Evidence.png" alt="The downloadable incident evidence package." width="958" height="496" loading="lazy">
-<figcaption><span class="lab">Fig 12.</span> The downloadable incident evidence package.</figcaption>
+<figcaption><span class="lab">Fig 10.</span> The downloadable incident evidence package.</figcaption>
 </figure>
 
 
 <p>There&#39;s also a MITRE framework coverage mapping:</p>
 <figure>
 <img src="../../assets/images/homelab-walkthrough/12-Framework.png" alt="MITRE framework coverage mapping in LabWatch." width="1582" height="686" loading="lazy">
-<figcaption><span class="lab">Fig 13.</span> MITRE framework coverage mapping in LabWatch.</figcaption>
+<figcaption><span class="lab">Fig 11.</span> MITRE framework coverage mapping in LabWatch.</figcaption>
 </figure>
 
 
