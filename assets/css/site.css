@@ -530,3 +530,63 @@ article .table-scroll{overflow-wrap:normal;}
 .lab-flow li span{font-size:.875rem;line-height:1.55;margin-top:.2rem;}
 .project-snub p+p{margin-top:.8rem;}
 .historical-note{padding:1rem 1.2rem;margin:1rem 0 1.5rem;border-left:3px solid var(--accent);background:var(--surface);color:var(--ink-2);line-height:1.6;}
+
+/* Capstone Viewer project card. */
+.capstone-feature {
+  display: grid;
+  grid-template-columns: minmax(10rem, .78fr) minmax(0, 1.22fr);
+  margin: 2.5rem 0 3.5rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+.capstone-feature-art {
+  display: grid;
+  place-items: center;
+  min-height: 13rem;
+  padding: 1.5rem;
+  background:
+    repeating-radial-gradient(circle at center, transparent 0 1.95rem, #bca8ff20 2rem 2.05rem),
+    radial-gradient(ellipse at center, #392753, #16121f 80%);
+}
+.capstone-feature-art img {
+  display: block;
+  width: clamp(6rem, 14vw, 10rem);
+  height: auto;
+  filter: drop-shadow(0 0 1.3rem #ad89ff55);
+}
+.capstone-feature-copy {
+  align-self: center;
+  padding: clamp(1.35rem, 4vw, 2.6rem);
+}
+.capstone-feature-copy h2 {
+  margin: 0 0 .45rem;
+  font-family: var(--sans);
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  line-height: 1.15;
+  color: var(--ink);
+}
+.capstone-feature-copy p {
+  margin: 0 0 1.15rem;
+  color: var(--ink-2);
+}
+.capstone-feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .8rem;
+  min-height: 44px;
+  padding: .4rem .9rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--surface);
+  font-family: var(--sans);
+  font-weight: 600;
+}
+.capstone-feature-link:hover,
+.capstone-feature-link:focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+@media (max-width: 640px) {
+  .capstone-feature { grid-template-columns: minmax(0, 1fr); }
+  .capstone-feature-art { min-height: 9rem; }
+}
