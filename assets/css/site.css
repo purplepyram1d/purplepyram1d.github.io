@@ -382,8 +382,26 @@ button,input,select,textarea{font-family:var(--mono);}
 .estate-skills li{margin:.25rem 0;}
 .estate-skills strong{color:var(--ink);}
 /* Homepage slideshow */
-.slideshow{width:50%;margin:0 auto 2.75rem;}
-@media (max-width:900px){.slideshow{width:100%;}}
+/* Showcase row: credentials | slideshow | experience */
+.showcase{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);grid-template-areas:"left show right";gap:2.5rem;align-items:center;margin:0 0 2.75rem;}
+.showcase .side-left{grid-area:left;}
+.showcase .slideshow{grid-area:show;}
+.showcase .side-right{grid-area:right;}
+.side-panel h2.estate-label{display:block;margin:0 0 .55rem;}
+.side-panel h2.estate-label:not(:first-child){margin-top:1.4rem;}
+.side-list{list-style:none;margin:0;padding:0;}
+.side-list li{padding:.4rem 0;border-top:1px solid var(--rule-soft);}
+.side-list li:last-child{border-bottom:1px solid var(--rule-soft);}
+.side-list strong{display:block;font-size:calc(.875rem + 1pt);font-weight:600;color:var(--ink);line-height:1.35;}
+.side-list span{display:block;font-size:calc(.75rem + 1pt);color:var(--ink-3);margin-top:.1rem;}
+.side-tags{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.35rem;}
+.side-tags li{font-size:calc(.75rem + 1pt);line-height:1.3;padding:.22rem .5rem;border:1px solid var(--rule);border-radius:999px;background:var(--surface);color:var(--ink-2);}
+@media (max-width:1100px){
+  .showcase{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"show show" "left right";gap:2rem;align-items:start;}
+}
+@media (max-width:600px){
+  .showcase{grid-template-columns:minmax(0,1fr);grid-template-areas:"show" "left" "right";}
+}
 @media (max-width:600px){.slide figcaption{font-size:.7rem;padding:.2rem .45rem;}}
 .slides{position:relative;aspect-ratio:1912/960;padding:6px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);box-shadow:0 1px 2px rgba(38,40,33,.06),0 10px 28px -12px rgba(38,40,33,.22);overflow:hidden;}
 .slides .slide{inset:6px;border-radius:5px;overflow:hidden;background:var(--paper-2);}
