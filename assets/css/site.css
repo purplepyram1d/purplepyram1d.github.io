@@ -382,9 +382,11 @@ button,input,select,textarea{font-family:var(--mono);}
 .estate-skills li{margin:.25rem 0;}
 .estate-skills strong{color:var(--ink);}
 /* Homepage slideshow */
-.slideshow{width:50%;margin:0 0 2.75rem;}
+.slideshow{width:50%;margin:0 auto 2.75rem;}
 @media (max-width:900px){.slideshow{width:100%;}}
-.slides{position:relative;aspect-ratio:1912/960;border:1px solid var(--rule);background:var(--paper-2);overflow:hidden;}
+@media (max-width:600px){.slide figcaption{font-size:.7rem;padding:.2rem .45rem;}}
+.slides{position:relative;aspect-ratio:1912/960;padding:6px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);box-shadow:0 1px 2px rgba(38,40,33,.06),0 10px 28px -12px rgba(38,40,33,.22);overflow:hidden;}
+.slides .slide{inset:6px;border-radius:5px;overflow:hidden;background:var(--paper-2);}
 .slide{position:absolute;inset:0;margin:0;opacity:0;visibility:hidden;transition:opacity .8s ease,visibility .8s;}
 .slide.is-active{opacity:1;visibility:visible;}
 .slide img{display:block;width:100%;height:100%;object-fit:contain;}
