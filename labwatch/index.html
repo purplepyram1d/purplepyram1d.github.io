@@ -3,272 +3,251 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Selected resolved homelab investigations by Johnny Meintel in a read-only LabWatch snapshot.">
+  <meta name="description" content="Four homelab security incidents I triaged, investigated and closed in LabWatch, my SOC case management portal.">
   <meta name="robots" content="noindex">
-  <title>LabWatch | snapshot | purplepyram1d</title>
+  <title>LabWatch | Resolved incidents | Johnny Meintel</title>
   <link rel="icon" href="data:,">
   <link rel="preload" href="assets/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/styles.css?v=20260908-8">
   <style>
-    /* Snapshot only: a thin banner and no write controls. */
-    .snapshot-banner{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;gap:.35rem 1rem;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:#111827;color:#e5e7eb;font:500 13px/1.4 Inter,system-ui,sans-serif}
-    .snapshot-banner a{color:#c4b5fd;text-decoration:none;font-weight:600;white-space:nowrap}
-    .snapshot-banner a:hover{text-decoration:underline}
-    /* Incident page on phones: the record grid had no column rule, so it grew to its longest word. */
-    .incident-record-view,.knowledge-article-view{grid-template-columns:minmax(0,1fr)}
-    .incident-record-view>*,.kb-page-layout>*,.incident-page-summary>*,.summary-group-grid>*{min-width:0}
-    .incident-record-view h1,.incident-record-view p,.incident-record-view strong,.incident-record-view span,.incident-record-view code,.incident-record-view li,.incident-record-view dd{overflow-wrap:anywhere}
-    /* Plain-English panel added under each incident header. */
-    .snapshot-plain{padding:16px 18px;border:1px solid rgba(77,198,198,.28);border-left:3px solid var(--accent);border-radius:var(--radius);background:rgba(77,198,198,.07)}
-    .snapshot-plain-label{margin:0 0 6px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
-    .snapshot-plain p:last-child{margin:0;color:var(--text);font-size:15px;line-height:1.6}
-    #newIncident,#newKnowledge,#uploadEvidence,[data-incident-action="edit"],[data-incident-action="create-kb"],[data-incident-action="link-kb"],[data-kb-action="edit"],.source-link{display:none!important}
+    /* LabWatch light theme: Rosé Pine Dawn, the same palette as the SRV01 instance. */
+    @font-face { font-family:"Inter Variable"; src:url("assets/fonts/InterVariable.woff2") format("woff2"); font-style:normal; font-weight:100 900; font-display:swap; }
+    :root {
+      color-scheme:light;
+      --base:#faf4ed; --surface:#fffaf3; --overlay:#f2e9e1;
+      --text:#575279; --subtle:#797593; --line:#dfdad9;
+      --love:#b4637a; --gold:#ea9d34; --rose:#d7827e; --pine:#286983; --iris:#907aa9;
+      --muted:color-mix(in srgb,var(--text) 75%,var(--subtle));
+      --rose-ink:color-mix(in srgb,var(--text) 65%,var(--rose));
+      --iris-ink:color-mix(in srgb,var(--text) 65%,var(--iris));
+      --accent:var(--pine); --radius:12px;
+    }
+    * { box-sizing:border-box; }
+    html { font-family:"Inter Variable","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; scroll-behavior:smooth; }
+    body { margin:0; min-width:320px; color:var(--text); font-size:17px; line-height:1.7; background:radial-gradient(circle at 80% -20%,color-mix(in srgb,var(--iris) 7%,transparent),transparent 35%),var(--base); }
+    a { color:var(--accent); }
+    a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+    ::selection { background:var(--line); }
+
+    .topbar { position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 28px; background:color-mix(in srgb,var(--base) 94%,transparent); border-bottom:1px solid var(--line); backdrop-filter:blur(12px); }
+    .brand { display:flex; align-items:center; gap:12px; color:var(--text); text-decoration:none; }
+    .brand strong, .brand small { display:block; line-height:1.3; }
+    .brand strong { font-size:16px; }
+    .brand small { color:var(--muted); font-size:12px; }
+    .brand-mark { position:relative; width:34px; height:34px; flex:none; }
+    .brand-mark span { position:absolute; left:5px; width:23px; height:7px; border-radius:2px; background:var(--rose); transform:skewX(-28deg); }
+    .brand-mark span:nth-child(1) { top:4px; opacity:.55; } .brand-mark span:nth-child(2) { top:13px; opacity:.78; } .brand-mark span:nth-child(3) { top:22px; }
+    .topbar-right { display:flex; align-items:center; gap:18px; }
+    .back { font-size:14px; font-weight:600; text-decoration:none; white-space:nowrap; }
+    .back:hover { text-decoration:underline; text-underline-offset:3px; }
+    .analyst { display:flex; align-items:center; gap:9px; padding-left:18px; border-left:1px solid var(--line); }
+    .analyst > span { display:grid; place-items:center; width:34px; height:34px; border-radius:50%; background:var(--overlay); color:var(--rose-ink); font-size:12px; font-weight:700; }
+    .analyst strong, .analyst small { display:block; line-height:1.3; white-space:nowrap; }
+    .analyst strong { font-size:13px; } .analyst small { color:var(--muted); font-size:12px; }
+
+    main { max-width:900px; margin:0 auto; padding:44px 24px 72px; }
+    .eyebrow { margin:0 0 8px; color:var(--accent); font-size:12px; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(32px,5vw,44px); line-height:1.15; letter-spacing:-.035em; font-weight:650; }
+    .lead { margin:16px 0 0; max-width:62ch; font-size:19px; line-height:1.65; }
+
+    .queue { margin:30px 0 0; padding:0; list-style:none; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; }
+    .queue li + li { border-top:1px solid var(--line); }
+    .queue a { display:grid; grid-template-columns:132px minmax(0,1fr) auto; align-items:center; gap:14px; padding:15px 20px; color:var(--text); text-decoration:none; }
+    .queue a:hover { background:var(--overlay); }
+    .queue li.high a { box-shadow:inset 3px 0 var(--rose-ink); }
+    .queue .num { color:var(--accent); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .queue .name { font-weight:600; line-height:1.4; }
+
+    .badge { display:inline-block; padding:3px 10px; border:1px solid color-mix(in srgb,currentColor 40%,var(--line)); border-radius:999px; background:color-mix(in srgb,currentColor 6%,var(--surface)); font-size:13px; font-weight:600; line-height:1.5; white-space:nowrap; }
+    .sev-high { color:var(--rose-ink); } .sev-info { color:var(--muted); } .closed { color:var(--pine); }
+
+    .case { margin-top:56px; scroll-margin-top:86px; }
+    .case-head { padding:26px 28px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); }
+    .case-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin-bottom:12px; }
+    .case-meta .num { margin-right:4px; color:var(--accent); font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+    h2 { margin:0; font-size:clamp(24px,3.4vw,30px); line-height:1.3; letter-spacing:-.025em; font-weight:650; }
+    .summary { margin:12px 0 0; max-width:64ch; font-size:19px; line-height:1.65; }
+
+    .glance { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:12px 0 0; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; }
+    .glance > div { padding:14px 20px; border-right:1px solid var(--line); }
+    .glance > div:last-child { border-right:0; }
+    .glance dt { margin-bottom:4px; color:var(--muted); font-size:13px; }
+    .glance dd { margin:0; font-size:16px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
+
+    .steps { margin:26px 0 0; padding:0; list-style:none; counter-reset:step; }
+    .steps li { display:grid; grid-template-columns:190px minmax(0,1fr); gap:20px; padding:18px 4px; border-bottom:1px solid var(--line); counter-increment:step; }
+    .steps li:last-child { border-bottom:0; }
+    .steps h3 { margin:3px 0 0; color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; line-height:1.6; }
+    .steps h3::before { content:counter(step,decimal-leading-zero); margin-right:12px; color:var(--iris-ink); font-variant-numeric:tabular-nums; }
+    .steps p { margin:0; max-width:60ch; }
+
+    .wild { margin:14px 0 0; padding:20px 24px; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:var(--radius); background:var(--surface); }
+    .wild h3, .skills h3 { margin:0 0 8px; color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; }
+    .wild p { margin:0; max-width:66ch; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; padding:0; list-style:none; }
+    .chips li { padding:4px 12px; border:1px solid var(--line); border-radius:7px; background:var(--overlay); font-size:14px; font-weight:600; line-height:1.5; }
+    .chips.attack li { color:var(--iris-ink); border-color:color-mix(in srgb,var(--iris) 40%,var(--line)); background:color-mix(in srgb,var(--iris) 8%,var(--surface)); }
+    .skills { margin:18px 4px 0; }
+    .skills .chips { margin-top:0; }
+
+    footer { max-width:900px; margin:0 auto; padding:22px 24px 44px; border-top:1px solid var(--line); color:var(--muted); font-size:15px; }
+
+    @media (max-width:760px) {
+      .topbar { padding:10px 16px; } .analyst { display:none; }
+      main { padding:30px 16px 52px; }
+      .queue a { grid-template-columns:minmax(0,1fr); gap:5px; padding:14px 16px; } .queue .badge { justify-self:start; }
+      .case { margin-top:44px; } .case-head { padding:20px 18px; }
+      .glance { grid-template-columns:1fr 1fr; } .glance > div { padding:13px 16px; border-bottom:1px solid var(--line); }
+      .glance > div:nth-child(2n) { border-right:0; } .glance > div:nth-last-child(-n+2) { border-bottom:0; }
+      .steps li { grid-template-columns:minmax(0,1fr); gap:6px; padding:16px 2px; }
+      .wild { padding:18px; }
+    }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+    @media print { .topbar { position:static; } .back { display:none; } .case { break-inside:avoid; } }
   </style>
 </head>
 <body>
-  <div class="snapshot-banner" role="note"><span><strong>Resolved homelab cases</strong>, updated October 17, 2026. Edited excerpts of my investigations, including assisted review where stated. This is a historical, read-only selection, not the live queue; tools and source labels reflect each case at the time. Raw evidence remains private.</span><a href="../index.html#current-lab">&larr; Current homelab</a></div>
-  <a class="skip-link" href="#main">Skip to main content</a>
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Primary navigation">
-      <a class="brand" href="./" aria-label="LabWatch home">
-        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div><strong>LabWatch</strong><small>FakeCorp Security Operations</small></div>
-      </a>
-      <nav id="primaryNav">
-        <button class="nav-item" data-view="all"><span class="nav-icon">▦</span>All incidents<span class="nav-count" id="navAll">0</span></button>
-        <button class="nav-item" data-view="active"><span class="nav-icon">◉</span>Active queue<span class="nav-count" id="navActive">0</span></button>
-        <button class="nav-item" data-view="mine"><span class="nav-icon">◎</span>My incidents<span class="nav-count" id="navMine">0</span></button>
-        <button class="nav-item active" data-view="resolved"><span class="nav-icon">✓</span>Resolved<span class="nav-count" id="navResolved">0</span></button>
-        <button class="nav-item" data-view="drafts"><span class="nav-icon">□</span>Drafts<span class="nav-count" id="navDrafts">0</span></button>
-      </nav>
-      <div class="sidebar-section">
-        <p>Workspace</p>
-        <button class="nav-item" data-view="knowledge"><span class="nav-icon">▤</span>Knowledge base<span class="nav-count" id="navKnowledge">1</span></button>
-        <button class="nav-item" data-view="metrics"><span class="nav-icon">⌁</span>Metrics</button>
-        <button class="nav-item" data-view="frameworks"><span class="nav-icon">◇</span>Framework coverage</button>
-      </div>
-      <div class="sidebar-foot">
-        <span class="privacy-dot"></span>
-        <div><strong>Public snapshot</strong><small>Live instance is private on SRV01</small></div>
-      </div>
-    </aside>
-
-    <div class="workspace">
-      <header class="topbar">
-        <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button>
-        <div class="search-wrap">
-          <span aria-hidden="true">⌕</span>
-          <label class="sr-only" for="globalSearch">Search LabWatch</label>
-          <input id="globalSearch" type="search" placeholder="Search incidents">
-          <kbd>Ctrl K</kbd>
-        </div>
-        <div class="top-actions">
-          <span class="connection" id="connectionState"><i></i>Checking storage</span>
-          <button class="icon-button" id="exportAll" title="Export all incident records" aria-label="Export all incident records">⇩</button>
-          <div class="analyst"><span>JM</span><div><strong>Johnny Meintel</strong><small>SOC Analyst</small></div></div>
-        </div>
-      </header>
-
-      <main id="main">
-        <section class="page-heading">
-          <div><p class="eyebrow">Security operations</p><h1 id="pageTitle">Resolved incidents</h1><p id="pageSubtitle">Explore selected closed lab cases, the evidence behind the decisions, and the limits of each result.</p></div>
-          <button class="primary-button" id="newIncident"><span>+</span> New incident</button>
-        </section>
-
-        <section class="notice" aria-label="Data integrity notice">
-          <span>i</span>
-          <p><strong>Evidence-first workflow.</strong> Open a case when the issue is reported, while the lab is running, or after the work is complete. Save partial findings as the investigation develops, preserve uncertainty, and support closure with retained evidence.</p>
-        </section>
-
-        <section class="metric-grid" id="metricGrid" aria-label="Incident summary">
-          <article><div class="metric-label"><span class="metric-icon blue">◉</span>Active</div><strong id="metricActive">0</strong><small>requiring analyst action</small></article>
-          <article><div class="metric-label"><span class="metric-icon red">!</span>Critical</div><strong id="metricCritical">0</strong><small>open critical incidents</small></article>
-          <article><div class="metric-label"><span class="metric-icon amber">◷</span>Awaiting review</div><strong id="metricReview">0</strong><small>pending final validation</small></article>
-          <article><div class="metric-label"><span class="metric-icon green">✓</span>Resolved</div><strong id="metricResolved">0</strong><small>validated and closed</small></article>
-        </section>
-
-        <section class="queue-card" id="queueView">
-          <div class="queue-toolbar">
-            <div><h2>Incident queue</h2><p id="resultSummary">0 records</p></div>
-            <div class="filters">
-              <label><span>Severity</span><select id="severityFilter"><option value="all">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Informational</option></select></label>
-              <label><span>Status</span><select id="statusFilter"><option value="all">All statuses</option><option>Draft</option><option>New</option><option>In Progress</option><option>Contained</option><option>Monitoring</option><option>Resolved</option><option>Closed</option></select></label>
-              <label><span>Category</span><select id="categoryFilter"><option value="all">All categories</option></select></label>
-              <label><span>Affected host</span><select id="assetFilter"><option value="all">All hosts</option></select></label>
-              <label><span>Sort by</span><select id="queueSort">
-                <option value="opened_desc" selected>Opened (newest)</option><option value="opened_asc">Opened (oldest)</option>
-                <option value="updated_desc">Updated (newest)</option><option value="updated_asc">Updated (oldest)</option>
-                <option value="number_desc">Number (highest)</option><option value="number_asc">Number (lowest)</option>
-                <option value="status_asc">Status (workflow)</option><option value="status_desc">Status (reverse)</option>
-                <option value="severity_desc">Severity (highest)</option><option value="severity_asc">Severity (lowest)</option>
-                <option value="category_asc">Category (A-Z)</option><option value="category_desc">Category (Z-A)</option>
-                <option value="asset_asc">Affected host (A-Z)</option><option value="asset_desc">Affected host (Z-A)</option>
-              </select></label>
-              <button class="secondary-button query-toggle" id="toggleQueryBuilder" type="button" aria-expanded="false">Advanced query <span id="queryConditionCount">0</span></button>
-              <button class="secondary-button" id="clearFilters">Clear</button>
-            </div>
-          </div>
-          <section class="query-builder hidden" id="queryBuilder" aria-labelledby="queryBuilderTitle">
-            <div class="query-builder-heading"><div><p class="eyebrow">Condition builder</p><h3 id="queryBuilderTitle">Filter incident records</h3><p>Combine metadata and record content. AND conditions stay in a group; OR begins another matching group.</p></div><button class="secondary-button" id="addQueryCondition" type="button">+ Add condition</button></div>
-            <div class="query-rows" id="queryRows"></div>
-            <div class="query-builder-footer"><div class="query-expression" id="queryExpression">No advanced conditions applied.</div><div><button class="secondary-button" id="clearQuery" type="button">Clear query</button><button class="secondary-button" id="copyQuery" type="button">Copy query</button><button class="primary-button" id="applyQuery" type="button">Run query</button></div></div>
-          </section>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Number</th><th>Incident</th><th>Severity</th><th>Status</th><th>Category</th><th>Source</th><th>Asset</th><th>Opened</th><th>Updated</th></tr></thead>
-              <tbody id="incidentRows"></tbody>
-            </table>
-          </div>
-          <div class="empty-state" id="emptyState">
-            <div class="empty-illustration"><span></span><span></span><span></span></div>
-            <h3>No incidents recorded</h3>
-            <p>Create a case from an alert, user report, observed change, or completed lab. Record only what is known and update it as the investigation develops.</p>
-            <button class="primary-button" id="emptyCreate">Create first incident</button>
-          </div>
-        </section>
-
-        <section class="analytics-view hidden" id="analyticsView" aria-live="polite"></section>
-
-        <section class="knowledge-view hidden" id="knowledgeView" aria-live="polite">
-          <div class="kb-toolbar">
-            <div><p class="eyebrow">Knowledge management</p><h2>Knowledge base</h2><p id="kbResultSummary">0 articles</p></div>
-            <div class="filters">
-              <label><span>Status</span><select id="kbStatusFilter"><option value="all">All statuses</option><option>Test</option><option>Draft</option><option>Published</option><option>Retired</option></select></label>
-              <label><span>Category</span><select id="kbCategoryFilter"><option value="all">All categories</option></select></label>
-              <button class="primary-button" id="newKnowledge"><span>+</span> New article</button>
-            </div>
-          </div>
-          <div class="kb-tag-filter hidden" id="kbTagFilter"></div>
-          <div class="kb-grid" id="knowledgeCards"></div>
-          <div class="empty-state hidden" id="kbEmptyState"><div class="empty-illustration"><span></span><span></span><span></span></div><h3>No knowledge articles match</h3><p>Adjust the knowledge filters or create an article from an established procedure.</p></div>
-        </section>
-
-        <article class="incident-record-view hidden" id="incidentRecordView" aria-live="polite"></article>
-
-        <article class="knowledge-article-view hidden" id="knowledgeArticleView" aria-live="polite"></article>
-      </main>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="LabWatch">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div><strong>LabWatch</strong><small>FakeCorp Security Operations</small></div>
+    </a>
+    <div class="topbar-right">
+      <a class="back" href="../index.html">&larr; Portfolio</a>
+      <div class="analyst"><span aria-hidden="true">JM</span><div><strong>Johnny Meintel</strong><small>SOC Analyst</small></div></div>
     </div>
-  </div>
+  </header>
 
-  <div class="modal-backdrop hidden" id="editorBackdrop">
-    <section class="editor-modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
-      <header><div><p class="eyebrow">Incident record</p><h2 id="editorTitle">New incident</h2></div><button class="close-button" data-close="editor" aria-label="Close editor">×</button></header>
-      <div class="editor-layout">
-        <nav class="form-nav" id="formNav" aria-label="Incident form sections">
-          <button class="active" data-form-section="identity"><span>01</span>Identification</button>
-          <button data-form-section="triage"><span>02</span>Triage</button>
-          <button data-form-section="frameworks"><span>03</span>Frameworks</button>
-          <button data-form-section="response"><span>04</span>Response</button>
-          <button data-form-section="evidence"><span>05</span>Evidence</button>
-          <button data-form-section="review"><span>06</span>Review</button>
-        </nav>
-        <form id="incidentForm" novalidate>
-          <input type="hidden" name="id">
-          <section class="form-section active" data-section="identity">
-            <div class="section-intro"><h3>Identification</h3><p>Record the issue as it arrived. Unknown details can be added as the investigation develops.</p></div>
-            <div class="field full"><label for="title">Short description <em>required</em></label><input id="title" name="title" required maxlength="140" placeholder="Observed incident title"></div>
-            <div class="form-grid three">
-              <div class="field"><label for="severity">Severity <em>required</em></label><select id="severity" name="severity" required><option value="">Select</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Informational</option></select></div>
-              <div class="field"><label for="status">Status</label><select id="status" name="status"><option>Draft</option><option>New</option><option>In Progress</option><option>Contained</option><option>Monitoring</option><option>Resolved</option><option>Closed</option></select></div>
-              <div class="field"><label for="classification">Classification</label><select id="classification" name="classification"><option>Unclassified</option><option>True Positive</option><option>Benign True Positive</option><option>False Positive</option><option>Expected Test Activity</option></select></div>
-            </div>
-            <div class="form-grid three">
-              <div class="field"><label for="category">Category</label><select id="category" name="category"><option>Uncategorized</option><option>Endpoint</option><option>Identity and access</option><option>Network</option><option>Malware</option><option>Data security</option><option>Vulnerability</option><option>Policy and control</option><option>Availability</option><option>Threat hunting</option><option>Other</option></select></div>
-              <div class="field"><label for="subcategory">Subcategory</label><select id="subcategory" name="subcategory"><option>Unspecified</option><option>Execution</option><option>Persistence</option><option>Privilege escalation</option><option>Defense evasion</option><option>Credential access</option><option>Discovery</option><option>Lateral movement</option><option>Collection</option><option>Command and control</option><option>Exfiltration</option><option>Impact</option><option>Authentication</option><option>Configuration</option><option>Detection validation</option><option>Other</option></select></div>
-              <div class="field"><label for="environment">Environment</label><select id="environment" name="environment"><option>Homelab</option><option>Endpoint lab</option><option>Network lab</option><option>Identity lab</option><option>Cloud lab</option><option>Corporate simulation</option><option>Other</option></select></div>
-            </div>
-            <div class="form-grid">
-              <div class="field"><label for="labRunId">Lab run ID <em>closure required</em></label><input id="labRunId" name="labRunId" placeholder="Exact retained run identifier, when available"></div>
-              <div class="field"><label for="alertSource">Alert source <em>required</em></label><input id="alertSource" name="alertSource" required list="alertSourceOptions" placeholder="Wazuh, Splunk, Defender, analyst observation"><datalist id="alertSourceOptions"><option value="Wazuh"><option value="Splunk"><option value="Microsoft Defender"><option value="Sysmon"><option value="Windows Event Log"><option value="Suricata"><option value="Velociraptor"><option value="Analyst observation"></datalist></div>
-              <div class="field"><label for="openedAt">Detection time, UTC</label><input id="openedAt" name="openedAt" type="datetime-local"></div>
-              <div class="field"><label for="assignedTo">Assigned analyst</label><input id="assignedTo" name="assignedTo" value="Johnny Meintel"></div>
-              <div class="field"><label for="assignedToRole">Assigned analyst role</label><select id="assignedToRole" name="assignedToRole"><option value="">Not recorded</option><option>SOC Analyst I</option><option>SOC Analyst II</option><option>Senior SOC Analyst</option><option>Detection Engineer</option><option>Incident Responder</option><option>Threat Hunter</option></select></div>
-            </div>
-            <div class="form-grid">
-              <div class="field"><label for="detectionMethod">Detection method</label><select id="detectionMethod" name="detectionMethod"><option>Analyst-created</option><option>SIEM alert</option><option>Threat hunt</option><option>User report</option><option>Control validation</option><option>Automated response</option><option>Manual observation</option><option>Other</option></select></div>
-              <div class="field"><label for="assignmentGroup">Assignment group</label><select id="assignmentGroup" name="assignmentGroup"><option>SOC Operations</option><option>Detection Engineering</option><option>Incident Response</option><option>Threat Hunting</option><option>Homelab Operations</option><option>Unassigned</option></select></div>
-            </div>
-            <div class="form-grid three">
-              <div class="field"><label for="callerName">Caller</label><input id="callerName" name="callerName" placeholder="Person reporting the issue"></div>
-              <div class="field"><label for="callerRole">Caller role</label><select id="callerRole" name="callerRole"><option value="">Not recorded</option><option>SOC Analyst I</option><option>IT Support Specialist I</option><option>Finance</option><option>Human Resources</option><option>Employee</option><option>System or integration</option><option>Other</option></select></div>
-              <div class="field"><label for="requestChannel">Request channel</label><select id="requestChannel" name="requestChannel"><option>Self-service portal</option><option>Monitoring integration</option><option>Email</option><option>Chat</option><option>Phone</option><option>Walk-up</option><option>Analyst observation</option><option>Other</option></select></div>
-            </div>
-            <p class="field-note">LabWatch captures the authenticated submitting account separately from the caller persona so the audit trail remains accurate.</p>
-            <div class="field full"><label for="initialAlert">Initial alert and trigger <em>required</em></label><textarea id="initialAlert" name="initialAlert" required rows="5" placeholder="Record the exact observed alert, rule, query, or analyst trigger. Do not infer intent here."></textarea></div>
-          </section>
+  <main id="top">
+    <p class="eyebrow">Security operations</p>
+    <h1>Resolved incidents</h1>
+    <p class="lead">LabWatch is the case management portal I run in my SOC homelab. Wazuh alerts land in it as incidents, and I work each one the way a SOC analyst would: triage, investigate, resolve, document. Here are four I closed.</p>
 
-          <section class="form-section" data-section="triage">
-            <div class="section-intro"><h3>Triage and scope</h3><p>Separate observable facts from analyst assessment.</p></div>
-            <div class="form-grid three"><div class="field"><label for="primaryAsset">Affected host or asset</label><input id="primaryAsset" name="primaryAsset" list="assetOptions" placeholder="Host or service"><datalist id="assetOptions"></datalist></div><div class="field"><label for="affectedUser">Affected identity</label><input id="affectedUser" name="affectedUser" list="identityOptions" placeholder="User or service account"><datalist id="identityOptions"></datalist></div><div class="field"><label for="sourceAddress">Source address</label><input id="sourceAddress" name="sourceAddress" list="sourceAddressOptions" placeholder="IP or origin"><datalist id="sourceAddressOptions"></datalist></div></div>
-            <div class="field full"><label for="observedFacts">Observed facts <em>closure required</em></label><textarea id="observedFacts" name="observedFacts" rows="7" placeholder="Add one confirmed fact per line as evidence becomes available. Include timestamps, event IDs, process relationships, network observations, and control results."></textarea></div>
-            <div class="field full"><label for="scope">Scope determination</label><textarea id="scope" name="scope" rows="5" placeholder="Systems, identities, time window, and evidence used to establish or limit scope."></textarea></div>
-            <div class="field full"><label for="attribution">Attribution assessment</label><textarea id="attribution" name="attribution" rows="5" placeholder="State what can be attributed, confidence level, supporting evidence, alternatives, and what remains unknown."></textarea></div>
-            <div class="field full"><label for="impact">Impact assessment</label><textarea id="impact" name="impact" rows="4" placeholder="Observed effect on confidentiality, integrity, availability, operations, or control coverage."></textarea></div>
-          </section>
+    <ol class="queue" aria-label="Resolved incidents">
+      <li><a href="#inc-0108"><span class="num">INC-2026-0108</span><span class="name">Repeated failed logins on a web portal</span><span class="badge sev-info">Informational</span></a></li>
+      <li><a href="#inc-0109"><span class="num">INC-2026-0109</span><span class="name">SQL injection login bypass</span><span class="badge sev-info">Informational</span></a></li>
+      <li class="high"><a href="#inc-0140"><span class="num">INC-2026-0140</span><span class="name">Encoded PowerShell on a workstation</span><span class="badge sev-high">High</span></a></li>
+      <li class="high"><a href="#inc-0141"><span class="num">INC-2026-0141</span><span class="name">Scheduled task running a script interpreter</span><span class="badge sev-high">High</span></a></li>
+    </ol>
 
-          <section class="form-section" data-section="frameworks">
-            <div class="section-intro"><h3>Framework mapping</h3><p>Map only behaviors demonstrated by retained evidence.</p></div>
-            <div class="field full"><label for="mitreTechniqueSearch">MITRE ATT&amp;CK mappings</label><div class="mitre-combobox"><input id="mitreTechniqueSearch" list="attackTechniqueOptions" autocomplete="off" placeholder="Type an ID or technique name"><datalist id="attackTechniqueOptions"></datalist><button class="secondary-button" id="addMitreTechnique" type="button">Add technique</button></div><div class="mitre-chip-list editor" id="mitreTechniqueChips"><p class="mitre-empty">No techniques mapped.</p></div><small>Techniques are validated against the pinned Enterprise ATT&amp;CK catalog. Rule suggestions remain unconfirmed until you explicitly confirm them against evidence.</small></div>
-            <div class="field full"><label for="nistCategorySelect">NIST CSF 2.0 mappings</label><div class="nist-picker"><select id="nistFunctionFilter" aria-label="Filter NIST categories by function"><option value="all">All functions</option></select><select id="nistCategorySelect" aria-label="NIST CSF category"><option value="">Select a category</option></select><button class="secondary-button" id="addNistMapping" type="button">Add category</button></div><div class="nist-mapping-list editor" id="nistMappingChips"><p class="nist-empty">No NIST CSF categories mapped.</p></div><small>Select only categories supported by the incident record. Mappings are grouped by Govern, Identify, Protect, Detect, Respond, and Recover.</small></div>
-            <div class="form-grid"><div class="field"><label for="confidence">Analytic confidence</label><select id="confidence" name="confidence"><option>Not assessed</option><option>Low</option><option>Moderate</option><option>High</option></select></div><div class="field"><label for="priorityRationale">Priority rationale</label><input id="priorityRationale" name="priorityRationale" placeholder="Why this case receives this priority"></div></div>
-          </section>
+    <article class="case" id="inc-0108">
+      <header class="case-head">
+        <div class="case-meta"><span class="num">INC-2026-0108</span><span class="badge sev-info">Informational</span><span class="badge closed">Closed</span></div>
+        <h2>Repeated failed logins on a web portal</h2>
+        <p class="summary">Six failed logins hit the FakeCorp portal from one workstation in under two minutes. I traced the alert back to its source, matched it to a planned login test and closed it in 25 minutes.</p>
+      </header>
+      <dl class="glance">
+        <div><dt>Affected host</dt><dd>SRV01</dd></div>
+        <div><dt>Detection</dt><dd>Wazuh rule 100343</dd></div>
+        <div><dt>Assessment</dt><dd>Expected Test Activity</dd></div>
+        <div><dt>Closed</dt><dd>Oct 6, 2026</dd></div>
+      </dl>
+      <ol class="steps">
+        <li><h3>Alert</h3><p>Wazuh rule 100343 fired at level 10: six failed portal logins from the same workstation within 120 seconds. LabWatch opened the incident automatically.</p></li>
+        <li><h3>Investigation</h3><p>I pulled the portal's authentication log and the matching Wazuh and Splunk events, then compared the source address, accounts, failure sequence and timestamps across all three.</p></li>
+        <li><h3>Finding</h3><p>Every failure came from WS02 during a login test I ran myself. The single-failure rule fired first, then the threshold rule escalated the pattern into an incident, exactly as the two rules are meant to work together.</p></li>
+        <li><h3>Resolution</h3><p>I classified the incident as Expected Test Activity and closed it. No containment was needed.</p></li>
+      </ol>
+      <section class="wild">
+        <h3>In the wild</h3>
+        <p>Password guessing, password spraying and credential stuffing against login pages are some of the most common alerts a SOC handles. The triage questions are the same every time: one source or many, one account or many, how fast, and did any attempt succeed.</p>
+        <ul class="chips attack" aria-label="MITRE ATT&amp;CK"><li>T1110 Brute Force</li></ul>
+      </section>
+      <section class="skills">
+        <h3>Skills</h3>
+        <ul class="chips"><li>Alert triage</li><li>Wazuh SIEM</li><li>Splunk</li><li>Log correlation</li><li>Threshold detection rules</li><li>Incident documentation</li></ul>
+      </section>
+    </article>
 
-          <section class="form-section" data-section="response">
-            <div class="section-intro"><h3>Response actions</h3><p>Record decisions, actions, owners, and validation rather than a generic checklist.</p></div>
-            <div class="field full"><label for="timeline">Incident timeline</label><textarea id="timeline" name="timeline" rows="9" placeholder="UTC timestamp | Actor | Action or observation | Result"></textarea></div>
-            <div class="field full"><label for="containment">Containment</label><textarea id="containment" name="containment" rows="5" placeholder="Action taken, reason, affected scope, owner, and immediate validation."></textarea></div>
-            <div class="field full"><label for="eradication">Eradication</label><textarea id="eradication" name="eradication" rows="5" placeholder="Persistence, account, configuration, or artifact changes and evidence of completion."></textarea></div>
-            <div class="field full"><label for="recovery">Recovery and monitoring</label><textarea id="recovery" name="recovery" rows="5" placeholder="Service restoration, negative controls, monitoring window, and exit criteria."></textarea></div>
-          </section>
+    <article class="case" id="inc-0109">
+      <header class="case-head">
+        <div class="case-meta"><span class="num">INC-2026-0109</span><span class="badge sev-info">Informational</span><span class="badge closed">Closed</span></div>
+        <h2>SQL injection login bypass</h2>
+        <p class="summary">A login to the FakeCorp portal succeeded with SQL injection in the email field. I confirmed the bypass was real, scoped the impact to one web application and closed the incident the same morning.</p>
+      </header>
+      <dl class="glance">
+        <div><dt>Affected host</dt><dd>SRV01</dd></div>
+        <div><dt>Detection</dt><dd>Wazuh rule 100345</dd></div>
+        <div><dt>Assessment</dt><dd>Expected Test Activity</dd></div>
+        <div><dt>Closed</dt><dd>Oct 6, 2026</dd></div>
+      </dl>
+      <ol class="steps">
+        <li><h3>Alert</h3><p>Wazuh rule 100345 fired at level 12: a successful portal login whose email field contained SQL syntax.</p></li>
+        <li><h3>Investigation</h3><p>I compared the application's auth.log with the Wazuh and Splunk events, checking the submitted input against the real authentication result instead of trusting the HTTP response code.</p></li>
+        <li><h3>Finding</h3><p>The injection worked: the application logged a successful login. It was my own test against a deliberately vulnerable lab application, and the impact stopped at the portal. Active Directory and the other services on the server were not involved.</p></li>
+        <li><h3>Resolution</h3><p>I classified the incident as Expected Test Activity and closed it. The detection caught the exact case that matters most, an injection attempt that succeeded.</p></li>
+      </ol>
+      <section class="wild">
+        <h3>In the wild</h3>
+        <p>SQL injection is an OWASP Top 10 weakness and a standard way attackers break into internet-facing applications. Scanners throw injection strings at websites all day, so the analyst's job is to separate the attempts from the one that got in.</p>
+        <ul class="chips attack" aria-label="MITRE ATT&amp;CK"><li>T1190 Exploit Public-Facing Application</li></ul>
+      </section>
+      <section class="skills">
+        <h3>Skills</h3>
+        <ul class="chips"><li>Web attack triage</li><li>OWASP Top 10</li><li>SQL injection</li><li>Scope and impact analysis</li><li>Wazuh SIEM</li><li>Log correlation</li></ul>
+      </section>
+    </article>
 
-          <section class="form-section" data-section="evidence">
-            <div class="section-intro"><h3>Evidence and analysis</h3><p>Reference retained artifacts. Do not paste secrets or sensitive payloads into the portal.</p></div>
-            <div class="field full"><label for="evidence">Evidence inventory <em>closure required</em></label><textarea id="evidence" name="evidence" rows="9" placeholder="Artifact type | Source system | Retained path or hash | What it proves"></textarea></div>
-            <section class="evidence-upload-panel" id="evidenceUploadPanel" aria-labelledby="evidenceUploadTitle">
-              <div class="evidence-upload-heading"><div><h4 id="evidenceUploadTitle">Evidence packages</h4><p>Attach the retained files for this incident. Packages are stored outside the web root and receive a SHA-256 upload fingerprint.</p></div><span class="evidence-limit">512 MiB per file</span></div>
-              <div class="evidence-upload-controls"><input id="evidenceFiles" type="file" multiple accept=".zip,.7z,.tar,.gz,.tgz,.evtx,.pcap,.pcapng,.json,.xml,.csv,.txt,.log,.md,.pdf,.png,.jpg,.jpeg,.webp"><button class="secondary-button" id="uploadEvidence" type="button">Upload selected files</button></div>
-              <p class="evidence-upload-note" id="evidenceUploadNote" role="status" aria-live="polite">Choose files, then save the incident to attach them.</p>
-              <div class="evidence-file-list" id="evidenceEditorFiles"></div>
-            </section>
-            <div class="field full"><label for="queries">Queries and commands</label><textarea id="queries" name="queries" rows="8" placeholder="Tool | Exact query or command | Purpose | Result"></textarea></div>
-            <div class="field full"><label for="detection">Detection assessment</label><textarea id="detection" name="detection" rows="6" placeholder="What fired, what did not, false-positive controls, coverage gaps, and tuning decision."></textarea></div>
-          </section>
+    <article class="case" id="inc-0140">
+      <header class="case-head">
+        <div class="case-meta"><span class="num">INC-2026-0140</span><span class="badge sev-high">High</span><span class="badge closed">Closed</span></div>
+        <h2>Encoded PowerShell on a workstation</h2>
+        <p class="summary">An encoded PowerShell command ran on WS01. I decoded it safely, traced it to a scheduled health check, found out why the check was failing and fixed it.</p>
+      </header>
+      <dl class="glance">
+        <div><dt>Affected host</dt><dd>WS01</dd></div>
+        <div><dt>Detection</dt><dd>Wazuh rule 92057</dd></div>
+        <div><dt>Assessment</dt><dd>Benign True Positive</dd></div>
+        <div><dt>Closed</dt><dd>Oct 15, 2026</dd></div>
+      </dl>
+      <ol class="steps">
+        <li><h3>Alert</h3><p>Wazuh rule 92057 flagged an encoded PowerShell child process on WS01, raised from a Sysmon process-creation event.</p></li>
+        <li><h3>Investigation</h3><p>I decoded the command as text without executing it. It was an availability probe, launched by a scheduled task running as LOCAL SERVICE.</p></li>
+        <li><h3>Root cause</h3><p>The task was authorized, but its report showed the HTTPS request failing. The probe was pointed at an IP address instead of the service hostname.</p></li>
+        <li><h3>Fix</h3><p>I changed only the endpoint to the hostname and reran the same task under the same low-privilege account. It reached the service, got an HTTP 401 back and exited with result 0.</p></li>
+        <li><h3>Resolution</h3><p>I closed the incident as a Benign True Positive: the detection was correct, and the activity had an authorized purpose.</p></li>
+      </ol>
+      <section class="wild">
+        <h3>In the wild</h3>
+        <p>Encoded PowerShell is a staple of malware loaders and hands-on-keyboard attackers because it hides the command from a quick look. Legitimate admin tooling uses it too, so an analyst has to decode it, find what launched it and decide whether it belongs.</p>
+        <ul class="chips attack" aria-label="MITRE ATT&amp;CK"><li>T1059.001 PowerShell</li><li>T1027.010 Command Obfuscation</li><li>T1053.005 Scheduled Task</li></ul>
+      </section>
+      <section class="skills">
+        <h3>Skills</h3>
+        <ul class="chips"><li>PowerShell analysis</li><li>Sysmon</li><li>Process lineage</li><li>Scheduled tasks</li><li>Root cause analysis</li><li>True vs. false positive</li></ul>
+      </section>
+    </article>
 
-          <section class="form-section" data-section="review">
-            <div class="section-intro"><h3>Review and closure</h3><p>Close the case only when the conclusion and recovery are reproducible from the record.</p></div>
-            <div class="field full"><label for="conclusion">Final determination <em>closure required</em></label><textarea id="conclusion" name="conclusion" rows="6" placeholder="State what happened, how you know, impact, and remaining uncertainty."></textarea></div>
-            <div class="field full"><label for="validation">Validation performed</label><textarea id="validation" name="validation" rows="6" placeholder="Positive and negative controls used to verify containment, recovery, and detection behavior."></textarea></div>
-            <div class="field full"><label for="lessons">Lessons learned and follow-up</label><textarea id="lessons" name="lessons" rows="6" placeholder="Detection changes, hardening, documentation, ownership, due date, and residual risk."></textarea></div>
-            <div class="form-grid"><div class="field"><label for="reviewedBy">Reviewed by</label><input id="reviewedBy" name="reviewedBy" placeholder="Reviewer or self-review marker"></div><div class="field"><label for="closedAt">Closure time, UTC</label><input id="closedAt" name="closedAt" type="datetime-local"></div></div>
-            <div class="field full"><label>Linked knowledge articles</label><div class="relation-picker" id="kbLinkPicker"><p>No knowledge articles available.</p></div><small>Select every KB consulted or created during the investigation.</small></div>
-            <label class="integrity-check"><input type="checkbox" id="integrityConfirm" name="integrityConfirm"><span>I confirm this record is ready for resolved or closed status, contains no invented observations, and is supported by retained evidence.</span></label>
-          </section>
-          <footer class="form-footer"><span id="formStatus">Draft and active cases can be saved with intake facts. Complete the evidence record and attestation before closure.</span><div><button type="button" class="secondary-button" data-close="editor">Cancel</button><button type="submit" class="primary-button">Save incident</button></div></footer>
-        </form>
-      </div>
-    </section>
-  </div>
+    <article class="case" id="inc-0141">
+      <header class="case-head">
+        <div class="case-meta"><span class="num">INC-2026-0141</span><span class="badge sev-high">High</span><span class="badge closed">Closed</span></div>
+        <h2>Scheduled task running a script interpreter</h2>
+        <p class="summary">A new scheduled task was registered on WS01 to run a script. I traced it to a legitimate queue job that was failing, found an explicit NTFS deny behind the failure and repaired it without elevating the account.</p>
+      </header>
+      <dl class="glance">
+        <div><dt>Affected host</dt><dd>WS01</dd></div>
+        <div><dt>Detection</dt><dd>Wazuh rule 100277</dd></div>
+        <div><dt>Assessment</dt><dd>Benign True Positive</dd></div>
+        <div><dt>Closed</dt><dd>Oct 15, 2026</dd></div>
+      </dl>
+      <ol class="steps">
+        <li><h3>Alert</h3><p>Wazuh rule 100277 flagged a scheduled task that invokes a script interpreter, raised from Windows Security Event ID 4698 (scheduled task created).</p></li>
+        <li><h3>Investigation</h3><p>I traced the task to a local queue-processing script running as LOCAL SERVICE and compared who created the task with the account it runs as. Its report showed it could read its input but could not write its output.</p></li>
+        <li><h3>Root cause</h3><p>The output folder had an explicit Write deny for LOCAL SERVICE, which overrode the Modify permission the account inherited.</p></li>
+        <li><h3>Fix</h3><p>I removed only that deny entry and reran the original task as the same account. It wrote the expected summary and returned result 0, and the input file's hash was unchanged.</p></li>
+        <li><h3>Resolution</h3><p>I closed the incident as a Benign True Positive: the task registration was real and authorized, and the fault was a permission defect.</p></li>
+      </ol>
+      <section class="wild">
+        <h3>In the wild</h3>
+        <p>Scheduled tasks are one of the most common ways attackers keep access and run code on Windows, which is why Event ID 4698 is worth alerting on. Most new tasks turn out to be legitimate, so the analyst checks who created it, what it runs and which account runs it.</p>
+        <ul class="chips attack" aria-label="MITRE ATT&amp;CK"><li>T1053.005 Scheduled Task</li><li>T1059 Command and Scripting Interpreter</li></ul>
+      </section>
+      <section class="skills">
+        <h3>Skills</h3>
+        <ul class="chips"><li>Windows Event Logs</li><li>Event ID 4698</li><li>NTFS permissions</li><li>Least privilege</li><li>Root cause analysis</li><li>File hashing</li></ul>
+      </section>
+    </article>
+  </main>
 
-  <div class="modal-backdrop hidden" id="kbEditorBackdrop">
-    <section class="kb-editor-modal" role="dialog" aria-modal="true" aria-labelledby="kbEditorTitle">
-      <header><div><p class="eyebrow">Knowledge article</p><h2 id="kbEditorTitle">New article</h2></div><button class="close-button" data-close="kb-editor" aria-label="Close knowledge editor">×</button></header>
-      <form id="knowledgeForm" novalidate>
-        <input type="hidden" name="id">
-        <div class="kb-form-body">
-          <section class="form-block"><h3>Article identity</h3><div class="field full"><label for="kbTitle">Title <em>required</em></label><input id="kbTitle" name="title" required maxlength="160" placeholder="Clear task or reference title"></div>
-            <div class="form-grid three"><div class="field"><label for="kbStatus">Status <em>required</em></label><select id="kbStatus" name="status"><option>Draft</option><option>Test</option><option>Published</option><option>Retired</option></select></div><div class="field"><label for="kbType">Article type</label><select id="kbType" name="articleType"><option>Procedure</option><option>Reference</option><option>Playbook</option><option>Troubleshooting</option><option>Detection Guide</option></select></div><div class="field"><label for="kbCategory">Category <em>required</em></label><input id="kbCategory" name="category" required placeholder="Authentication, endpoint, LabWatch Operations"></div></div>
-            <div class="form-grid"><div class="field"><label for="kbAudience">Audience</label><input id="kbAudience" name="audience" placeholder="SOC analysts"></div><div class="field"><label for="kbAuthor">Author</label><input id="kbAuthor" name="author" value="Johnny Meintel"></div></div>
-            <div class="field full"><label for="kbSummary">Summary <em>required</em></label><textarea id="kbSummary" name="summary" required rows="4" placeholder="What this article helps an analyst accomplish"></textarea></div></section>
-          <section class="form-block"><h3>Procedure and decisions</h3><div class="field full"><label for="kbPurpose">Purpose and scope</label><textarea id="kbPurpose" name="purpose" rows="4" placeholder="Use cases, exclusions, and operating boundary"></textarea></div><div class="field full"><label for="kbPrerequisites">Prerequisites</label><textarea id="kbPrerequisites" name="prerequisites" rows="4" placeholder="Access, evidence, tools, approvals, and starting state"></textarea></div><div class="field full"><label for="kbContent">Article body <em>required</em></label><textarea id="kbContent" name="content" required rows="12" placeholder="Numbered procedure, decision points, expected results, and rollback steps"></textarea></div></section>
-          <section class="form-block"><h3>Validation and relationships</h3><div class="field full"><label for="kbValidation">Validation</label><textarea id="kbValidation" name="validation" rows="5" placeholder="Success conditions, negative controls, and evidence of completion"></textarea></div><div class="field full"><label for="kbEscalation">Escalation and exceptions</label><textarea id="kbEscalation" name="escalation" rows="4" placeholder="Stop conditions, handoff criteria, and unresolved cases"></textarea></div><div class="form-grid"><div class="field"><label for="kbMitre">MITRE ATT&amp;CK references</label><textarea id="kbMitre" name="mitre" rows="5" placeholder="Only when the article covers evidenced adversary behavior"></textarea></div><div class="field"><label for="kbNist">NIST references</label><textarea id="kbNist" name="nist" rows="5" placeholder="Applicable response functions or phases"></textarea></div></div><div class="field full"><label for="kbTags">Tags</label><input id="kbTags" name="tags" placeholder="comma, separated, tags"></div><div class="field full"><label>Linked incidents</label><div class="relation-picker" id="incidentLinkPicker"><p>No incidents available.</p></div><small>Link only incidents that used or materially relate to this article.</small></div><div class="form-grid"><div class="field"><label for="kbReviewedBy">Reviewed by</label><input id="kbReviewedBy" name="reviewedBy"></div><div class="field"><label for="kbReviewDate">Review date</label><input id="kbReviewDate" name="reviewDate" type="date"></div></div></section>
-        </div>
-        <footer class="form-footer"><span id="kbFormStatus">Required fields preserve article quality.</span><div><button type="button" class="secondary-button" data-close="kb-editor">Cancel</button><button type="submit" class="primary-button">Save article</button></div></footer>
-      </form>
-    </section>
-  </div>
-
-  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
-  <script src="assets/snapshot.js?v=20261017"></script>
-  <script src="assets/app.js?v=20261017-resolved" defer></script>
+  <footer>FakeCorp is the fictional company my homelab simulates. The live LabWatch portal runs privately on SRV01.</footer>
 </body>
 </html>
