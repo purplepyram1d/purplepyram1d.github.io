@@ -1,0 +1,5 @@
+Logo sources (trademarks belong to their owners; used to identify tools used in the lab)
+wazuh.svg        wazuh/wazuh-dashboard-plugins  plugins/main/public/assets/images/themes/light/icon.svg
+velociraptor.svg Velocidex/velociraptor          gui/velociraptor/src/public/velo.svg
+powershell.svg   PowerShell/PowerShell           assets/ps_black_128.svg
+kalilinux.svg, wireshark.svg, python.svg, vmware.svg, burpsuite.svg  simple-icons 16.36.0 (CC0)
