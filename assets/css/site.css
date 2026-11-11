@@ -382,7 +382,8 @@ button,input,select,textarea{font-family:var(--mono);}
 .estate-skills li{margin:.25rem 0;}
 .estate-skills strong{color:var(--ink);}
 /* Homepage slideshow */
-.slideshow{margin:0 0 2.75rem;}
+.slideshow{width:50%;margin:0 0 2.75rem;}
+@media (max-width:900px){.slideshow{width:100%;}}
 .slides{position:relative;aspect-ratio:1912/960;border:1px solid var(--rule);background:var(--paper-2);overflow:hidden;}
 .slide{position:absolute;inset:0;margin:0;opacity:0;visibility:hidden;transition:opacity .8s ease,visibility .8s;}
 .slide.is-active{opacity:1;visibility:visible;}
