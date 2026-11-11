@@ -91,6 +91,42 @@
 
     footer { max-width:900px; margin:0 auto; padding:22px 24px 44px; border-top:1px solid var(--line); color:var(--muted); font-size:15px; }
 
+    /* Desktop side rails: an illustrative view of the lab estate and its alert stream. */
+    .rail { display:none; }
+    @media (min-width:1280px) {
+      .shell { display:grid; grid-template-columns:236px minmax(0,900px) 236px; gap:32px; justify-content:center; padding:0 24px; }
+      .shell main { max-width:none; margin:0; padding-inline:0; }
+      .rail { display:block; position:sticky; top:86px; align-self:start; margin-top:48px; font-size:13px; line-height:1.45; }
+    }
+    .rail-title { display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 10px; color:var(--accent); font-size:12px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+    .rail-title small { color:var(--muted); font-size:11px; font-weight:600; letter-spacing:.02em; text-transform:none; }
+    .panel { border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); overflow:hidden; }
+    .hosts { margin:0; padding:0; list-style:none; }
+    .hosts li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:2px 12px; padding:9px 14px; }
+    .hosts li + li { border-top:1px solid var(--line); }
+    .hosts b { font-size:14px; font-weight:650; }
+    .hosts span { grid-column:2; color:var(--muted); font-size:12px; }
+    .dot { grid-row:span 2; width:8px; height:8px; border-radius:50%; background:var(--pine); animation:pulse 2.6s ease-out infinite; }
+    .hosts li:nth-child(2n) .dot { animation-delay:.9s; } .hosts li:nth-child(3n) .dot { animation-delay:1.7s; }
+    @keyframes pulse { 0% { box-shadow:0 0 0 0 color-mix(in srgb,var(--pine) 45%,transparent); } 70%,100% { box-shadow:0 0 0 7px transparent; } }
+    .flow { display:grid; margin:22px 0 0; }
+    .flow .node { padding:8px 14px; border:1px solid var(--line); border-radius:9px; background:var(--surface); text-align:center; }
+    .flow .node b { display:block; font-size:13px; font-weight:650; } .flow .node span { color:var(--muted); font-size:12px; }
+    .flow .wire { position:relative; justify-self:center; width:2px; height:30px; background:var(--line); }
+    .flow .wire i { position:absolute; left:-3px; top:0; width:8px; height:8px; border-radius:50%; background:var(--rose); animation:drop 1.8s linear infinite; }
+    .flow .wire:nth-of-type(4) i { animation-delay:.9s; }
+    @keyframes drop { 0% { transform:translateY(-4px); opacity:0; } 20%,80% { opacity:1; } 100% { transform:translateY(26px); opacity:0; } }
+    .feed { height:min(560px,calc(100vh - 170px)); padding:0 14px; -webkit-mask-image:linear-gradient(transparent,#000 9%,#000 91%,transparent); mask-image:linear-gradient(transparent,#000 9%,#000 91%,transparent); }
+    .feed ul { margin:0; padding:0; list-style:none; animation:stream 48s linear infinite; }
+    @keyframes stream { to { transform:translateY(-50%); } }
+    .feed li { padding:10px 0 10px 11px; border-bottom:1px solid var(--line); box-shadow:inset 2px 0 var(--line); }
+    .feed li.hi { box-shadow:inset 2px 0 var(--rose-ink); }
+    .feed time { color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+    .feed b { margin-left:8px; color:var(--accent); font-size:12px; font-weight:700; }
+    .feed span { display:block; margin-top:2px; }
+    .feed li.hi span { font-weight:600; }
+    @media (prefers-reduced-motion:reduce) { .dot, .flow .wire i, .feed ul { animation:none; } .flow .wire i { top:11px; } }
+
     @media (max-width:760px) {
       .topbar { padding:10px 16px; } .analyst { display:none; }
       main { padding:30px 16px 52px; }
@@ -116,6 +152,28 @@
       <div class="analyst"><span aria-hidden="true">JM</span><div><strong>Johnny Meintel</strong><small>SOC Analyst</small></div></div>
     </div>
   </header>
+
+  <div class="shell">
+  <aside class="rail" aria-hidden="true">
+    <p class="rail-title">Lab estate <small>6 of 6 online</small></p>
+    <div class="panel">
+      <ul class="hosts">
+        <li><i class="dot"></i><b>DC01</b><span>Active Directory, DNS</span></li>
+        <li><i class="dot"></i><b>SRV01</b><span>Web apps, LabWatch</span></li>
+        <li><i class="dot"></i><b>WS01</b><span>Domain workstation</span></li>
+        <li><i class="dot"></i><b>WS02</b><span>Exercise workstation</span></li>
+        <li><i class="dot"></i><b>SIEM01</b><span>Wazuh, Velociraptor</span></li>
+        <li><i class="dot"></i><b>KALI</b><span>Attack machine</span></li>
+      </ul>
+    </div>
+    <div class="flow">
+      <div class="node"><b>Endpoints</b><span>Sysmon and Windows logs</span></div>
+      <div class="wire"><i></i></div>
+      <div class="node"><b>Wazuh</b><span>Detection rules</span></div>
+      <div class="wire"><i></i></div>
+      <div class="node"><b>LabWatch</b><span>Incident cases</span></div>
+    </div>
+  </aside>
 
   <main id="top">
     <p class="eyebrow">Security operations</p>
@@ -247,6 +305,39 @@
       </section>
     </article>
   </main>
+
+  <aside class="rail" aria-hidden="true">
+    <p class="rail-title">Event stream <small>illustrative</small></p>
+    <div class="panel feed">
+      <ul>
+        <li><time>14:02:11</time><b>DC01</b><span>Kerberos service ticket requested</span></li>
+        <li><time>14:02:14</time><b>WS01</b><span>Sysmon: process created</span></li>
+        <li><time>14:02:19</time><b>SRV01</b><span>Portal login failed</span></li>
+        <li class="hi"><time>14:02:21</time><b>SRV01</b><span>Repeated failed logins from one source</span></li>
+        <li><time>14:02:30</time><b>SIEM01</b><span>Agent keepalive received</span></li>
+        <li><time>14:02:38</time><b>WS02</b><span>Windows logon success</span></li>
+        <li class="hi"><time>14:02:44</time><b>WS01</b><span>Encoded PowerShell child process</span></li>
+        <li><time>14:02:52</time><b>DC01</b><span>Group Policy refreshed</span></li>
+        <li class="hi"><time>14:03:01</time><b>SRV01</b><span>SQL syntax in a successful portal login</span></li>
+        <li><time>14:03:09</time><b>WS01</b><span>Sysmon: network connection</span></li>
+        <li class="hi"><time>14:03:15</time><b>WS01</b><span>Scheduled task created (4698)</span></li>
+        <li><time>14:03:22</time><b>SIEM01</b><span>Alert forwarded to LabWatch</span></li>
+        <li><time>14:03:31</time><b>DC01</b><span>Kerberos service ticket requested</span></li>
+        <li><time>14:03:34</time><b>WS01</b><span>Sysmon: process created</span></li>
+        <li><time>14:03:39</time><b>SRV01</b><span>Portal login failed</span></li>
+        <li class="hi"><time>14:03:41</time><b>SRV01</b><span>Repeated failed logins from one source</span></li>
+        <li><time>14:03:50</time><b>SIEM01</b><span>Agent keepalive received</span></li>
+        <li><time>14:03:58</time><b>WS02</b><span>Windows logon success</span></li>
+        <li class="hi"><time>14:04:04</time><b>WS01</b><span>Encoded PowerShell child process</span></li>
+        <li><time>14:04:12</time><b>DC01</b><span>Group Policy refreshed</span></li>
+        <li class="hi"><time>14:04:21</time><b>SRV01</b><span>SQL syntax in a successful portal login</span></li>
+        <li><time>14:04:29</time><b>WS01</b><span>Sysmon: network connection</span></li>
+        <li class="hi"><time>14:04:35</time><b>WS01</b><span>Scheduled task created (4698)</span></li>
+        <li><time>14:04:42</time><b>SIEM01</b><span>Alert forwarded to LabWatch</span></li>
+      </ul>
+    </div>
+  </aside>
+  </div>
 
   <footer>FakeCorp is the fictional company my homelab simulates. The live LabWatch portal runs privately on SRV01.</footer>
 </body>
