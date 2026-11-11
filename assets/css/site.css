@@ -123,6 +123,7 @@ img{max-width:100%;height:auto;}
   color:var(--ink-2);text-wrap:pretty;
 }
 .thesis strong{color:var(--ink);font-weight:600;}
+.banner + .thesis p{text-align:center;}
 
 /* ---------- lab status callout ---------- */
 .lab-status{
