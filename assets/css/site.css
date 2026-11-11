@@ -55,6 +55,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 img{max-width:100%;height:auto;}
 
 .wrap{max-width:var(--shell);margin:0 auto;padding:0 2.5rem;}
+@media (max-width:640px){.wrap{padding-inline:1.1rem;}}
 .skip{position:absolute;left:-9999px;}
 .skip:focus{left:1rem;top:1rem;background:var(--paper);padding:.6rem 1rem;border:1px solid var(--ink);z-index:100;}
 
@@ -155,6 +156,37 @@ section{margin-bottom:3.5rem;}
 .sec-head .count{
   font-family:var(--mono);font-size:calc(.6875rem + 1pt);color:var(--ink-3);
   margin-left:auto;font-variant-numeric:tabular-nums;
+}
+
+/* Homepage section hierarchy and alignment. */
+.homepage-main{--home-section-space:clamp(3.75rem,6vw,6.25rem);}
+.homepage-main > .estate,
+.homepage-main > .latest-section{margin-bottom:var(--home-section-space);}
+.home-section-head{
+  position:relative;align-items:center;min-height:4.6rem;
+  margin-bottom:clamp(1.7rem,3vw,2.5rem);padding:.85rem 0 .95rem 1.35rem;
+  border-top:1px solid var(--rule);border-bottom:2px solid var(--ink);
+}
+.home-section-head::before{
+  content:"";position:absolute;left:0;top:.85rem;bottom:.95rem;width:4px;
+  background:#6d28d9;border-radius:999px;
+}
+.home-section-head h2{
+  font-size:clamp(calc(1.65rem + 1pt),calc(2.5vw + 1pt),calc(2.25rem + 1pt));
+  line-height:1.05;letter-spacing:-.025em;text-transform:none;font-weight:650;
+}
+.home-section-head .count{
+  padding:.32rem .65rem;border:1px solid var(--rule);border-radius:999px;
+  background:var(--surface);font-size:calc(.6875rem + 1pt);line-height:1.2;
+}
+@media (min-width:821px){
+  .latest-section-head{padding-left:calc(var(--rail) + var(--gap) + 1.35rem);}
+  .latest-section-head::before{left:calc(var(--rail) + var(--gap));}
+}
+@media (max-width:640px){
+  .home-section-head{min-height:4rem;padding-left:1rem;gap:.7rem;}
+  .home-section-head::before{width:3px;}
+  .home-section-head .count{font-size:.7rem;}
 }
 /* Platform section headers on the completion log */
 .platform-head{align-items:center;padding-bottom:.6rem;}
@@ -412,7 +444,7 @@ footer{padding:3rem 0 4rem;}
 
 /* Homelab overview and site-wide readable typography. */
 button,input,select,textarea{font-family:var(--mono);}
-.estate-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:2.5rem;margin-bottom:1.5rem;}
+.estate-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:2.5rem;margin-bottom:1.5rem;}
 .estate-summary{min-width:0;}
 .estate-summary .estate-intro{max-width:none;margin-bottom:1rem;}
 .estate-skills{margin:0 0 1.1rem;padding-left:1.1rem;font-size:calc(.875rem + 1pt);line-height:1.55;color:var(--ink-2);}
@@ -431,7 +463,7 @@ button,input,select,textarea{font-family:var(--mono);}
 .banner img{display:block;width:100%;height:auto;}
 
 /* Showcase row: credentials | slideshow | experience */
-.showcase{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);grid-template-areas:"left show right";gap:2.5rem;align-items:center;margin:0 0 2.75rem;}
+.showcase{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);grid-template-areas:"left show right";gap:2.5rem;align-items:start;margin:0 0 2.75rem;}
 .showcase .side-left{grid-area:left;}
 .showcase .slideshow{grid-area:show;}
 .showcase .side-right{grid-area:right;}
@@ -522,7 +554,7 @@ article .table-scroll{overflow-wrap:normal;}
 }
 
 /* Current lab overview and service inventory. */
-.lab-flow{align-self:stretch;padding:1.2rem 1.35rem;border:1px solid var(--rule);background:var(--surface);}
+.lab-flow{align-self:start;padding:1.2rem 1.35rem;border:1px solid var(--rule);background:var(--surface);}
 .lab-flow h3{margin:.3rem 0 .8rem;font-family:var(--sans);}
 .lab-flow ol{margin:0;padding-left:1.3rem;}
 .lab-flow li{padding:.35rem 0 .65rem;color:var(--ink-2);}
