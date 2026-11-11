@@ -381,6 +381,18 @@ button,input,select,textarea{font-family:var(--mono);}
 .estate-skills{margin:0 0 1.1rem;padding-left:1.1rem;font-size:calc(.875rem + 1pt);line-height:1.55;color:var(--ink-2);}
 .estate-skills li{margin:.25rem 0;}
 .estate-skills strong{color:var(--ink);}
+/* Homepage slideshow */
+.slideshow{margin:0 0 2.75rem;}
+.slides{position:relative;aspect-ratio:1912/960;border:1px solid var(--rule);background:var(--paper-2);overflow:hidden;}
+.slide{position:absolute;inset:0;margin:0;opacity:0;visibility:hidden;transition:opacity .8s ease,visibility .8s;}
+.slide.is-active{opacity:1;visibility:visible;}
+.slide img{display:block;width:100%;height:100%;object-fit:contain;}
+.slide figcaption{position:absolute;left:0;bottom:0;padding:.35rem .7rem;font-size:calc(.75rem + 1pt);color:var(--ink);background:var(--surface);border-top:1px solid var(--rule);border-right:1px solid var(--rule);}
+.slide-dots{display:flex;justify-content:center;gap:.6rem;margin-top:.75rem;}
+.slide-dots button{width:.6rem;height:.6rem;padding:0;border:1px solid var(--accent);border-radius:50%;background:transparent;cursor:pointer;}
+.slide-dots button[aria-current="true"]{background:var(--accent);}
+.slide-dots button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+@media (prefers-reduced-motion:reduce){.slide{transition:none;}}
 .estate-links{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;}
 .estate-walkthrough-link{font-size:calc(.8125rem + 1pt);border-bottom:1px solid var(--accent);}
 .estate-walkthrough-link:hover{color:var(--accent);}
