@@ -152,6 +152,10 @@ section{margin-bottom:3.5rem;}
   font-family:var(--mono);font-size:calc(.6875rem + 1pt);color:var(--ink-3);
   margin-left:auto;font-variant-numeric:tabular-nums;
 }
+/* Platform section headers on the completion log */
+.platform-head{align-items:center;padding-bottom:.6rem;}
+.platform-head h2{display:flex;align-items:center;gap:.7rem;font-size:calc(1.125rem + 1pt);text-transform:none;letter-spacing:.01em;color:var(--ink);}
+.platform-logo{width:1.75rem;height:1.75rem;flex:none;opacity:.85;}
 
 /* ---------- homelab estate ---------- */
 .estate-intro{

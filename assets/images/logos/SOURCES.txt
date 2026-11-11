@@ -3,3 +3,4 @@ wazuh.svg        wazuh/wazuh-dashboard-plugins  plugins/main/public/assets/image
 velociraptor.svg Velocidex/velociraptor          gui/velociraptor/src/public/velo.svg
 powershell.svg   PowerShell/PowerShell           assets/ps_black_128.svg
 kalilinux.svg, wireshark.svg, python.svg, vmware.svg, burpsuite.svg  simple-icons 16.36.0 (CC0)
+hackthebox.svg   simple-icons 16.36.0 (CC0)
