@@ -1,23 +1,23 @@
 @import url('fonts.css?v=2026090903');
 /* ============================================================
    purplepyram1d | detection engineering notebook
-   Design system. Restrained Rose Pine, research-journal layout.
+   Design system. Ivory (from the Corpus Magnus reader), research-journal layout.
    ============================================================ */
 
 :root{
   color-scheme:light;
-  /* Rose Pine Dawn, adjusted for small-text contrast */
-  --paper:#FAF4ED;
-  --paper-2:#F2E9E1;
-  --surface:#FFFAF3;
-  --ink:#403B59;
-  --ink-2:#5F5975;
-  --ink-3:#6F6982;
-  --rule:#D8CFD2;
-  --rule-soft:#E8DFDC;
-  --accent:#806B98;
-  --accent-soft:#EEE5F1;
-  --mark:#806B98;
+  /* Ivory: paper/ink/faint/ox/gilt match Corpus Magnus reader.css body.ivory; derived tones checked for WCAG AA */
+  --paper:#FCFAF4;
+  --paper-2:#F0EDE2;
+  --surface:#FFFDF8;
+  --ink:#262821;
+  --ink-2:#57594F;
+  --ink-3:#66685D;
+  --rule:#D6D0BE;
+  --rule-soft:#E7E3D6;
+  --accent:#62422F;
+  --accent-soft:#F1EAE2;
+  --mark:#807454;
 
   /* type roles */
   --serif:var(--sans);
