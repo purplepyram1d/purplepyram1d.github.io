@@ -447,11 +447,20 @@ button,input,select,textarea{font-family:var(--mono);}
 .estate-skills{margin:0 0 1.1rem;padding-left:1.1rem;font-size:calc(.875rem + 1pt);line-height:1.55;color:var(--ink-2);}
 .estate-skills li{margin:.25rem 0;}
 .estate-skills strong{color:var(--ink);}
-/* Homepage banner photo, flanked by tool logos */
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,900px) minmax(0,1fr);align-items:start;gap:clamp(1rem,2vw,2rem);margin-top:1.5rem;}
-.logo-grid{list-style:none;margin:0;padding:0;text-align:center;}
-.logo-grid li{display:flex;flex-direction:column;align-items:center;gap:.3rem;}
-.hero .logo-grid{display:grid;gap:.45rem;align-self:center;}
+/* Homelab media with one continuous logo column on either side. */
+.homelab-media{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:1.25rem;max-width:90rem;margin:1.5rem auto 0;
+}
+.homelab-visuals{
+  display:grid;grid-row:1;min-width:0;gap:clamp(1rem,2vw,1.9rem);
+}
+.homelab-visuals .slideshow{min-width:0;margin:0;}
+.logo-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,5.5rem));justify-content:center;gap:1rem 1.25rem;
+  list-style:none;margin:0;padding:0;text-align:center;
+}
+.logo-grid li{display:flex;flex-direction:column;align-items:center;gap:.3rem;min-width:0;}
+.logo-grid .photo-tool{display:none;}
 .tool-mark{
   display:grid;place-items:center;width:2.25rem;height:2.25rem;padding:.28rem;
   border:1px solid var(--rule);border-radius:.45rem;background:var(--surface);
@@ -459,29 +468,26 @@ button,input,select,textarea{font-family:var(--mono);}
 .tool-mark img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;}
 .tool-mark .logo-on-dark,.tool-mark .logo-inset{filter:invert(1) hue-rotate(180deg);}
 .tool-mark .logo-inset{mix-blend-mode:screen;}
-.tool-name{font-size:calc(.6875rem + 1pt);line-height:1.2;letter-spacing:.035em;color:var(--ink-3);}
-@media (max-width:1250px){.hero{grid-template-columns:minmax(0,1fr);}.hero .logo-grid{display:none;}}
+.tool-name{font-size:calc(.6875rem + 1pt);line-height:1.2;letter-spacing:.035em;color:var(--ink-3);overflow-wrap:anywhere;}
 .banner{max-width:900px;width:100%;margin:0 auto;border:1px solid var(--rule);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.24),0 10px 28px -12px rgba(0,0,0,.4);}
 .banner img{display:block;width:100%;height:auto;}
 
-/* Homepage slideshow and tool rails */
-.homelab-gallery{
-  display:grid;grid-template-columns:minmax(0,1fr);gap:1.5rem;max-width:90rem;
-  margin:clamp(1.15rem,2vw,1.9rem) auto 0;
-}
-.homelab-gallery .slideshow{grid-row:1;min-width:0;margin:0;}
-.gallery-tools{display:flex;flex-wrap:wrap;justify-content:center;gap:1rem 1.25rem;}
-.gallery-tools li{min-width:4.5rem;}
 @media (min-width:1240px){
-  .homelab-gallery{
+  .homelab-media{
     grid-template-columns:minmax(7rem,1fr) minmax(0,72rem) minmax(7rem,1fr);
-    align-items:center;gap:clamp(1rem,2vw,2rem);
+    gap:clamp(1rem,2vw,2rem);
   }
-  .homelab-gallery .slideshow{grid-column:2;}
-  .gallery-tools{display:grid;grid-row:1;gap:1.9rem;}
-  .gallery-tools:first-child{grid-column:1;}
-  .gallery-tools:last-child{grid-column:3;}
+  .homelab-visuals{grid-column:2;}
+  .logo-grid{
+    grid-row:1;grid-template-columns:minmax(0,1fr);grid-auto-rows:1fr;align-items:center;
+    gap:0;padding:0 0 3.5rem;
+  }
+  .logo-grid:first-child{grid-column:1;}
+  .logo-grid:last-child{grid-column:3;}
+  .logo-grid .photo-tool{display:flex;}
 }
+
+/* Homepage slideshow */
 @media (max-width:600px){.slide figcaption{font-size:.7rem;padding:.2rem .45rem;}}
 .slides{position:relative;aspect-ratio:1912/960;padding:6px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.24),0 10px 28px -12px rgba(0,0,0,.4);overflow:hidden;}
 .slides .slide{inset:6px;border-radius:5px;overflow:hidden;background:var(--paper-2);}
