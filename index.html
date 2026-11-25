@@ -7,7 +7,7 @@
 <meta name="description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="assets/css/site.css?v=2026111118">
+<link rel="stylesheet" href="assets/css/site.css?v=20261125">
 <meta property="og:title" content="purplepyram1d | Johnny Meintel">
 <meta property="og:description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta property="og:type" content="website">
@@ -35,90 +35,40 @@
     </div>
   </header>
 
+  <main id="main" class="homepage-main">
+
   <div class="hero">
     <ul class="logo-grid" aria-label="Defensive and analysis tools">
-      <li><img src="assets/images/logos/wazuh.svg" alt=""><span>Wazuh</span></li>
+      <li><img class="logo-on-dark" src="assets/images/logos/wazuh.svg" alt=""><span>Wazuh</span></li>
       <li><img src="assets/images/logos/velociraptor.svg" alt=""><span>Velociraptor</span></li>
-      <li><img src="assets/images/logos/wireshark.svg" alt=""><span>Wireshark</span></li>
-      <li><img src="assets/images/logos/burpsuite.svg" alt=""><span>Burp Suite</span></li>
+      <li><img class="logo-on-dark" src="assets/images/logos/wireshark.svg" alt=""><span>Wireshark</span></li>
+      <li><img class="logo-on-dark" src="assets/images/logos/burpsuite.svg" alt=""><span>Burp Suite</span></li>
     </ul>
-    <figure class="banner">
-      <img src="assets/images/homelab-banner.webp" alt="Homelab desk: a BLUETEAM workstation, two monitors showing the corp.local domain, and a REDTEAM laptop">
-    </figure>
+    <div class="hero-media">
+      <figure class="banner">
+        <img src="assets/images/homelab-banner.webp" alt="Homelab desk: a BLUETEAM workstation, two monitors showing the corp.local domain, and a REDTEAM laptop">
+      </figure>
+      <section class="slideshow" aria-roledescription="carousel" aria-label="Homelab screenshots">
+        <div class="slides">
+          <figure class="slide is-active"><img src="assets/images/slideshow/dc01-srv01-walls.png" width="1912" height="960" alt="DC01 Active Directory and SRV01 service operations walls showing live health, services and recent events"><figcaption>DC01 and SRV01 operations walls</figcaption></figure>
+          <figure class="slide"><img src="assets/images/slideshow/wazuh1.png" width="1912" height="903" alt="Wazuh Discover view filtered to the WS01 agent, with an alert histogram and event fields" loading="lazy"><figcaption>Wazuh Discover · WS01 alert detail</figcaption></figure>
+          <figure class="slide"><img src="assets/images/slideshow/velociraptor1.png" width="1914" height="900" alt="Velociraptor flow view for a client information collection on DC01" loading="lazy"><figcaption>Velociraptor collection on DC01</figcaption></figure>
+          <figure class="slide"><img src="assets/images/slideshow/files-corp-local.png" width="1909" height="906" alt="Corp Documents web app showing department libraries and recent files" loading="lazy"><figcaption>Corp Documents · AD-backed document app on IIS</figcaption></figure>
+          <figure class="slide"><img src="assets/images/slideshow/kali1.png" width="1911" height="883" alt="Kali desktop with an Nmap service scan beside the operator notes vault" loading="lazy"><figcaption>Kali · service scan and operator notes</figcaption></figure>
+        </div>
+        <div class="slide-dots" role="group" aria-label="Choose screenshot"></div>
+      </section>
+    </div>
     <ul class="logo-grid" aria-label="Offensive and scripting tools">
-      <li><img src="assets/images/logos/kalilinux.svg" alt=""><span>Kali Linux</span></li>
+      <li><img class="logo-on-dark" src="assets/images/logos/kalilinux.svg" alt=""><span>Kali Linux</span></li>
       <li><img src="assets/images/logos/powershell.svg" alt=""><span>PowerShell</span></li>
-      <li><img src="assets/images/logos/python.svg" alt=""><span>Python</span></li>
-      <li><img src="assets/images/logos/vmware.svg" alt=""><span>VMware</span></li>
+      <li><img class="logo-on-dark" src="assets/images/logos/python.svg" alt=""><span>Python</span></li>
+      <li><img class="logo-on-dark" src="assets/images/logos/vmware.svg" alt=""><span>VMware</span></li>
     </ul>
   </div>
 
   <div class="thesis">
     <p>Detection engineering and incident response, practiced on an enterprise homelab I built and operate.</p>
-  </div>
-
-  <main id="main" class="homepage-main">
-
-  <!-- ============ SHOWCASE: credentials | slideshow | experience ============ -->
-  <div class="showcase">
-  <aside class="side-panel side-left" aria-labelledby="creds-heading">
-    <h2 class="estate-label credential-heading" id="creds-heading"><span>Education</span><span class="credential-count">2 degrees</span></h2>
-    <ul class="side-list education-list">
-      <li><span class="education-line"><img src="assets/images/logos/wgu.png" alt="WGU"><strong>M.S. Cybersecurity</strong></span><span>WGU · 2025</span></li>
-      <li><span class="education-line"><img src="assets/images/logos/wgu.png" alt="WGU"><strong>B.S. Cloud Computing</strong></span><span>WGU · 2025</span></li>
-    </ul>
-    <h2 class="estate-label credential-heading"><span>Certifications</span><span class="credential-count">13 credentials</span></h2>
-    <ul class="cert-list">
-      <li>Google IT Support</li>
-      <li>Google Cybersecurity</li>
-      <li>ITIL v4</li>
-      <li>Azure Fundamentals</li>
-      <li>AWS Cloud Practitioner</li>
-      <li>LPI Linux Essentials</li>
-      <li>CompTIA Project+</li>
-      <li>CompTIA A+</li>
-      <li>CompTIA Network+</li>
-      <li>CompTIA Cloud+</li>
-      <li>CompTIA Security+</li>
-      <li>CompTIA CySA+</li>
-      <li>CompTIA PenTest+</li>
-    </ul>
-  </aside>
-
-  <section class="slideshow" aria-roledescription="carousel" aria-label="Homelab screenshots">
-    <div class="slides">
-      <figure class="slide is-active"><img src="assets/images/slideshow/dc01-srv01-walls.png" width="1912" height="960" alt="DC01 Active Directory and SRV01 service operations walls showing live health, services and recent events"><figcaption>DC01 and SRV01 operations walls</figcaption></figure>
-      <figure class="slide"><img src="assets/images/slideshow/wazuh1.png" width="1912" height="903" alt="Wazuh Discover view filtered to the WS01 agent, with an alert histogram and event fields" loading="lazy"><figcaption>Wazuh Discover · WS01 alert detail</figcaption></figure>
-      <figure class="slide"><img src="assets/images/slideshow/velociraptor1.png" width="1914" height="900" alt="Velociraptor flow view for a client information collection on DC01" loading="lazy"><figcaption>Velociraptor collection on DC01</figcaption></figure>
-      <figure class="slide"><img src="assets/images/slideshow/files-corp-local.png" width="1909" height="906" alt="Corp Documents web app showing department libraries and recent files" loading="lazy"><figcaption>Corp Documents · AD-backed document app on IIS</figcaption></figure>
-      <figure class="slide"><img src="assets/images/slideshow/kali1.png" width="1911" height="883" alt="Kali desktop with an Nmap service scan beside the operator notes vault" loading="lazy"><figcaption>Kali · service scan and operator notes</figcaption></figure>
-    </div>
-    <div class="slide-dots" role="group" aria-label="Choose screenshot"></div>
-  </section>
-
-  <aside class="side-panel side-right" aria-labelledby="exp-heading">
-    <h2 class="estate-label" id="exp-heading">Experience</h2>
-    <ul class="side-list experience-list">
-      <li><strong>Technical Support Specialist</strong><span>Prime Healthcare · 2026–present</span><ul class="experience-points"><li>Support ~50 hospitals.</li><li>Triage tickets and access issues.</li></ul></li>
-      <li><strong>AI Annotator</strong><span>Handshake AI · 2025–present</span><ul class="experience-points"><li>Evaluate text, audio, and video.</li><li>Score quality, safety, and alignment.</li></ul></li>
-      <li><strong>Technical Support Representative</strong><span>Costco Wholesale · 2024–2026</span><ul class="experience-points"><li>Troubleshoot endpoints and networks.</li><li>Manage tickets, escalations, and documentation.</li></ul></li>
-    </ul>
-    <h2 class="estate-label">Skills</h2>
-    <ul class="side-tags">
-      <li>Detection Engineering · Wazuh &amp; Sysmon</li>
-      <li>Endpoint Forensics · Velociraptor</li>
-      <li>Active Directory &amp; Group Policy</li>
-      <li>Windows Server Administration</li>
-      <li>PowerShell Scripting</li>
-      <li>Python Automation</li>
-      <li>Kali Linux Security Testing</li>
-      <li>Incident &amp; Ticket Management</li>
-      <li>Identity &amp; Access Management</li>
-      <li>Endpoint &amp; Network Troubleshooting</li>
-      <li>Technical Documentation</li>
-      <li>Customer Service &amp; Communication</li>
-    </ul>
-  </aside>
   </div>
 
   <!-- ============ HOMELAB ============ -->
@@ -187,9 +137,9 @@
     </div>
   </section>
 
-  <!-- ============ LATEST ============ -->
+  <!-- ============ RECENT POSTS ============ -->
   <section class="latest-section" aria-labelledby="latest-heading">
-    <div class="sec-head home-section-head latest-section-head"><h2 id="latest-heading">Latest</h2><span class="count">2026-09</span></div>
+    <div class="sec-head home-section-head"><h2 id="latest-heading">Recent Posts</h2><span class="count">2026-09</span></div>
 
       <div class="grid">
         <div class="rail"><span>2026-09-30</span><span class="em">T1110.001</span><span>~8 min</span></div>
@@ -236,16 +186,22 @@
   </section>
 
 
-  <section id="capstone-viewer" class="capstone-feature" aria-labelledby="capstone-viewer-title">
-    <div class="capstone-feature-art" aria-hidden="true">
-      <img src="assets/images/capstone-viewer.png" alt="" width="256" height="256" loading="lazy" decoding="async">
-    </div>
-    <div class="capstone-feature-copy">
+  <section id="capstone-viewer" aria-labelledby="capstone-viewer-title">
+    <div class="sec-head home-section-head">
       <h2 id="capstone-viewer-title">Capstone Viewer</h2>
-      <p>I built a local OSINT dashboard for tracking cybersecurity and world events through public feeds, a live map, and a searchable timeline.</p>
-      <a class="capstone-feature-link" href="https://github.com/purplepyram1d/capstone-viewer">
-        View on GitHub <span aria-hidden="true">&rarr;</span>
-      </a>
+    </div>
+
+    <div class="capstone-feature">
+      <div class="capstone-feature-art">
+        <img src="assets/images/capstone-banner.png" alt="" width="1800" height="760" loading="lazy" decoding="async">
+      </div>
+      <div class="capstone-feature-copy">
+        <p>I built Capstone Viewer to track cybersecurity advisories, internet outages, severe weather, and world events through public feeds such as CISA, IODA, NOAA, and USGS. The live map and searchable timeline let you filter reports and open their original sources.</p>
+        <p>The six-stream Live Wall and topic-specific Kiosk work as second-screen displays. On Windows, Capstone keeps collecting from the system tray.</p>
+        <a class="capstone-feature-link" href="https://github.com/purplepyram1d/capstone-viewer#readme">
+          View project on GitHub <span aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -256,7 +212,6 @@
     <div class="grid">
       <div class="rail"><span>about</span></div>
       <div class="colophon">
-        <p>I brought years of customer service experience to the help desk, and am now building the skills needed for my next role in cybersecurity.</p>
         <div class="social-links" aria-label="Professional profiles">
           <a class="social-link" href="https://github.com/purplepyram1d">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.3 11.3 0 0 0-3.57 22c.57.1.77-.25.77-.55v-2.16c-3.15.68-3.81-1.34-3.81-1.34-.52-1.31-1.26-1.66-1.26-1.66-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1.01 1.73 2.65 1.23 3.3.94.1-.73.4-1.23.72-1.51-2.51-.29-5.15-1.26-5.15-5.59 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.44.11-3 0 0 .95-.3 3.11 1.16a10.8 10.8 0 0 1 5.66 0c2.16-1.46 3.11-1.16 3.11-1.16.62 1.56.23 2.71.11 3 .73.79 1.17 1.8 1.17 3.04 0 4.34-2.65 5.3-5.17 5.58.41.35.77 1.04.77 2.1v3.11c0 .3.21.66.78.55A11.3 11.3 0 0 0 12 .7Z"/></svg>
