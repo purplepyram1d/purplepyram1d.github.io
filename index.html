@@ -7,7 +7,7 @@
 <meta name="description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta name="author" content="Johnny Meintel">
 <link rel="icon" href="assets/images/logo-pyramid.png">
-<link rel="stylesheet" href="assets/css/site.css?v=20261125d">
+<link rel="stylesheet" href="assets/css/site.css?v=20261125e">
 <meta property="og:title" content="purplepyram1d | Johnny Meintel">
 <meta property="og:description" content="Johnny Meintel's cybersecurity portfolio: an enterprise homelab, hands-on detection and incident-response work, and documented lab exercises.">
 <meta property="og:type" content="website">
@@ -53,11 +53,11 @@
       </figure>
       <section class="slideshow" aria-roledescription="carousel" aria-label="Homelab screenshots">
         <div class="slides">
-          <figure class="slide is-active"><img src="assets/images/slideshow/dc01-srv01-walls.png" width="1912" height="960" alt="DC01 Active Directory and SRV01 service operations walls showing live health, services and recent events"><figcaption>DC01 and SRV01 operations walls</figcaption></figure>
-          <figure class="slide"><img src="assets/images/slideshow/wazuh1.png" width="1912" height="903" alt="Wazuh Discover view filtered to the WS01 agent, with an alert histogram and event fields" loading="lazy"><figcaption>Wazuh Discover · WS01 alert detail</figcaption></figure>
-          <figure class="slide"><img src="assets/images/slideshow/velociraptor1.png" width="1914" height="900" alt="Velociraptor flow view for a client information collection on DC01" loading="lazy"><figcaption>Velociraptor collection on DC01</figcaption></figure>
-          <figure class="slide"><img src="assets/images/slideshow/files-corp-local.png" width="1909" height="906" alt="Corp Documents web app showing department libraries and recent files" loading="lazy"><figcaption>Corp Documents · AD-backed document app on IIS</figcaption></figure>
-          <figure class="slide"><img src="assets/images/slideshow/kali1.png" width="1911" height="883" alt="Kali desktop with an Nmap service scan beside the operator notes vault" loading="lazy"><figcaption>Kali · service scan and operator notes</figcaption></figure>
+          <figure class="slide is-active" data-label="Ops Walls"><img src="assets/images/slideshow/dc01-srv01-walls.png" width="1912" height="960" alt="DC01 Active Directory and SRV01 service operations walls showing live health, services and recent events"><figcaption>DC01 and SRV01 operations walls</figcaption></figure>
+          <figure class="slide" data-label="Wazuh"><img src="assets/images/slideshow/wazuh1.png" width="1912" height="903" alt="Wazuh Discover view filtered to the WS01 agent, with an alert histogram and event fields" loading="lazy"><figcaption>Wazuh Discover · WS01 alert detail</figcaption></figure>
+          <figure class="slide" data-label="Velociraptor"><img src="assets/images/slideshow/velociraptor1.png" width="1914" height="900" alt="Velociraptor flow view for a client information collection on DC01" loading="lazy"><figcaption>Velociraptor collection on DC01</figcaption></figure>
+          <figure class="slide" data-label="Corp Docs"><img src="assets/images/slideshow/files-corp-local.png" width="1909" height="906" alt="Corp Documents web app showing department libraries and recent files" loading="lazy"><figcaption>Corp Documents · AD-backed document app on IIS</figcaption></figure>
+          <figure class="slide" data-label="Kali"><img src="assets/images/slideshow/kali1.png" width="1911" height="883" alt="Kali desktop with an Nmap service scan beside the operator notes vault" loading="lazy"><figcaption>Kali · service scan and operator notes</figcaption></figure>
         </div>
         <div class="slide-picker" role="group" aria-label="Choose screenshot"></div>
       </section>
@@ -245,10 +245,10 @@
   slides.forEach(function (slide, n) {
     var button = document.createElement('button');
     var label = document.createElement('span');
-    var caption = slide.querySelector('figcaption').textContent;
+    var name = slide.dataset.label;
     button.type = 'button';
-    button.setAttribute('aria-label', caption);
-    label.textContent = caption;
+    button.setAttribute('aria-label', name);
+    label.textContent = name;
     button.appendChild(label);
     button.addEventListener('click', function () { show(n); });
     picker.appendChild(button);
