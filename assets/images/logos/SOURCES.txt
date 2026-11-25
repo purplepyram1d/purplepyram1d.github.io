@@ -5,3 +5,13 @@ powershell.svg   PowerShell/PowerShell           assets/ps_black_128.svg
 kalilinux.svg, wireshark.svg, python.svg, vmware.svg, burpsuite.svg  simple-icons 16.36.0 (CC0)
 hackthebox.svg   simple-icons 16.36.0 (CC0)
 wgu.png          Wikimedia Commons, WGU-Marketing-logo.png (CC BY-SA 4.0)
+crackmapexec.png  CrackMapExec project, cme/data/cme.ico converted to PNG
+                  https://github.com/byt3bl33d3r/CrackMapExec/blob/master/cme/data/cme.ico
+fortra.png        Fortra's official GitHub organization mark, displayed with Impacket
+                  https://github.com/fortra
+responder.svg     Papirus icon theme, Papirus/64x64/apps/responder.svg
+                  https://github.com/PapirusDevelopmentTeam/papirus-icon-theme
+nmap.png          Nmap project icon, nmap-logo-64px.png
+                  https://nmap.org/images/nmap-logo-64px.png
+hashcat.svg, mysql.svg  Simple Icons (CC0), revision 801eaab5b70f4933137069397ebbd2ce5f9ad56e
+                  https://github.com/simple-icons/simple-icons
